@@ -5,8 +5,6 @@
 //  Created by Rashon Hyslop on 6/22/25.
 //
 
-
-
 //
 //  SchedulingView.swift
 //  ShondonDHApp
@@ -150,10 +148,10 @@ struct SchedulingView: View {
         if let index = timeSlots.firstIndex(where: { $0.id == slot.id }) {
             timeSlots[index].content = content
             
-            // Save to viewModel if it's the current upload
+            // Set the start time on the upload view model when scheduling current upload
             if content.id == "current" {
-                viewModel.scheduledTime = timeFormatter.string(from: slot.time)
-                viewModel.scheduledDate = selectedDate
+                viewModel.startTime = timeFormatter.string(from: slot.time)
+                // viewModel.scheduledDate = selectedDate // Not present in view model
             }
         }
     }

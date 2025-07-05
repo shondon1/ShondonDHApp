@@ -6,12 +6,6 @@
 //
 
 //
-//  UploadView.swift
-//  ShondonDHApp
-//
-//  Created by Rashon Hyslop on 6/21/25.
-//
-
 import SwiftUI
 import Firebase
 import FirebaseAuth
@@ -24,11 +18,13 @@ import AVFoundation
 // MARK: - Data Model
 struct RadioContent: Codable, Identifiable {
     @DocumentID var id: String?
-    var type: String = "none"
-    var url: String = ""
-    var title: String = "DreamHouse Radio"
-    var thumbnail: String? = nil
-    var isPlaying: Bool = false
+    var type: String
+    var url: String
+    var title: String
+    var thumbnailURL: String?
+    var isPlaying: Bool
+    var order: Int   // <-- add this
+   // var createdAt: Timestamp? // optional, in case you want it later
 }
 
 // MARK: - Upload View
@@ -36,28 +32,45 @@ struct UploadView: View {
     @State private var title: String = ""
     @State private var type: String = "Audio"
     @State private var mediaURL: URL?
+    @State private var thumbnailImage: UIImage?
     @State private var youtubeURL: String = ""
     @State private var isUploading: Bool = false
     @State private var uploadStatus: String = ""
     @State private var uploadProgress: Double = 0.0
-    @State private var isPickerPresented: Bool = false
+    @State private var isFilePickerPresented: Bool = false
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var showingImagePicker = false
-    @State private var selectedVideoURL: URL?
-
+    @State private var showingThumbnailPicker = false
+    
     let mediaTypes = ["Audio", "Video", "YouTube"]
-
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                Text("Upload to Radio Flow")
-                    .font(.title)
-                    .bold()
-
-                TextField("Title", text: $title)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding(.horizontal)
-
+                // Header
+                VStack(spacing: 8) {
+                    Image(systemName: "radio.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.blue)
+                    
+                    Text("Upload to Radio Flow")
+                        .font(.title)
+                        .bold()
+                }
+                .padding(.top)
+                
+                // Title Input
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Title")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    
+                    TextField("Enter title", text: $title)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+                .padding(.horizontal)
+                
+                // Content Type Picker
                 Picker("Content Type", selection: $type) {
                     ForEach(mediaTypes, id: \.self) { item in
                         Text(item)
@@ -69,111 +82,51 @@ struct UploadView: View {
                     // Reset media when type changes
                     mediaURL = nil
                     selectedPhotoItem = nil
+                    thumbnailImage = nil
                 }
-
-                if type != "YouTube" {
-                    VStack(spacing: 15) {
-                        // File picker button
-                        Button(action: {
-                            isPickerPresented = true
-                        }) {
-                            HStack {
-                                Image(systemName: "folder.badge.plus")
-                                Text("Choose from Files")
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue.opacity(0.1))
-                            .foregroundColor(.blue)
-                            .cornerRadius(10)
-                        }
+                
+                // Content Selection Based on Type
+                if type == "YouTube" {
+                    // YouTube URL Input
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("YouTube URL")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
                         
-                        // Media picker button (Photos for video, Music for audio)
-                        if type == "Video" {
-                            // Photos picker for videos
-                            PhotosPicker(
-                                selection: $selectedPhotoItem,
-                                matching: .videos,
-                                photoLibrary: .shared()
-                            ) {
-                                HStack {
-                                    Image(systemName: "photo.badge.plus")
-                                    Text("Choose from Photos")
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.green.opacity(0.1))
-                                .foregroundColor(.green)
-                                .cornerRadius(10)
-                            }
-                            .onChange(of: selectedPhotoItem) { newItem in
-                                Task {
-                                    await loadVideoFromPhotos(newItem)
-                                }
-                            }
-                            
-                            // Alternative: Camera Roll button using UIImagePickerController
-                            Button(action: {
-                                showingImagePicker = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "camera.fill")
-                                    Text("Choose from Camera Roll")
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.purple.opacity(0.1))
-                                .foregroundColor(.purple)
-                                .cornerRadius(10)
-                            }
-                        } else {
-                            // Music Library button for audio (if you have Apple Music integration)
-                            Button(action: {
-                                uploadStatus = "Music Library access requires Apple Music integration"
-                            }) {
-                                HStack {
-                                    Image(systemName: "music.note.house")
-                                    Text("Choose from Music Library")
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.pink.opacity(0.1))
-                                .foregroundColor(.pink)
-                                .cornerRadius(10)
-                            }
-                            .disabled(true) // Disable for now
-                        }
-                        
-                        // Show selected file
-                        if let url = mediaURL {
-                            HStack {
-                                Image(systemName: type == "Video" ? "video.fill" : "music.note")
-                                    .foregroundColor(.accentColor)
-                                Text(url.lastPathComponent)
-                                    .font(.caption)
-                                    .lineLimit(1)
-                                Spacer()
-                                Button("Remove") {
-                                    mediaURL = nil
-                                }
-                                .font(.caption)
-                                .foregroundColor(.red)
-                            }
-                            .padding()
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
-                        }
+                        TextField("https://youtube.com/watch?v=...", text: $youtubeURL)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .autocapitalization(.none)
+                            .disableAutocorrection(true)
                     }
                     .padding(.horizontal)
-                } else {
-                    TextField("YouTube URL", text: $youtubeURL)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding(.horizontal)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
+                } else if type == "Audio" {
+                    // Audio Selection with Thumbnail
+                    VStack(spacing: 15) {
+                        // Audio File Selection
+                        audioSelectionSection
+                        
+                        // Thumbnail Selection for Audio
+                        thumbnailSelectionSection
+                    }
+                } else if type == "Video" {
+                    // Video Selection Only (No Thumbnail)
+                    videoSelectionSection
                 }
-
-                // Upload button
+                
+                // Upload Progress
+                if isUploading {
+                    VStack(spacing: 10) {
+                        ProgressView(value: uploadProgress)
+                            .progressViewStyle(LinearProgressViewStyle())
+                            .padding(.horizontal)
+                        
+                        Text("\(Int(uploadProgress * 100))%")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                // Upload Button
                 Button(action: {
                     Task {
                         await uploadMedia()
@@ -182,50 +135,74 @@ struct UploadView: View {
                     if isUploading {
                         HStack {
                             ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle())
-                            Text("Uploading... \(Int(uploadProgress * 100))%")
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            Text("Uploading...")
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.gray)
                         .foregroundColor(.white)
-                        .cornerRadius(10)
+                        .cornerRadius(12)
                     } else {
-                        Text("Upload")
-                            .bold()
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(isValidForUpload() ? Color.blue : Color.gray)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
+                        HStack {
+                            Image(systemName: "arrow.up.circle.fill")
+                            Text("Upload to Radio")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(isValidForUpload() ? Color.blue : Color.gray)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
                     }
                 }
                 .padding(.horizontal)
                 .disabled(!isValidForUpload() || isUploading)
-
+                
+                // Status Message
                 if !uploadStatus.isEmpty {
-                    Text(uploadStatus)
-                        .foregroundColor(uploadStatus.contains("successful") ? .green : .red)
-                        .padding()
-                        .multilineTextAlignment(.center)
+                    HStack {
+                        Image(systemName: uploadStatus.contains("successful") ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                        Text(uploadStatus)
+                    }
+                    .foregroundColor(uploadStatus.contains("successful") ? .green : .red)
+                    .padding()
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(8)
+                    .padding(.horizontal)
                 }
             }
             .padding(.vertical)
         }
         .fileImporter(
-            isPresented: $isPickerPresented,
-            allowedContentTypes: type == "Video" ? [.movie, .mpeg4Movie, .quickTimeMovie, .video] : [.audio, .mp3, .wav, .mpeg4Audio, .m4a],
+            isPresented: $isFilePickerPresented,
+            allowedContentTypes: type == "Video" ?
+            [.movie, .mpeg4Movie, .quickTimeMovie, .video] :
+                [.audio, .mp3, .wav, .mpeg4Audio, .m4a],
             allowsMultipleSelection: false
         ) { result in
             handleFileImporterResult(result)
         }
         .sheet(isPresented: $showingImagePicker) {
-            ImagePicker(sourceType: .photoLibrary, mediaType: .video) { url in
-                if let url = url {
-                    mediaURL = url
-                    uploadStatus = "Video selected from Camera Roll"
+            MediaPicker(
+                mediaType: type == "Video" ? .video : .audio,
+                onSelection: { url, thumbnail in
+                    if let url = url {
+                        mediaURL = url
+                        uploadStatus = "\(type) selected from Camera Roll"
+                    }
                 }
-            }
+            )
+        }
+        .sheet(isPresented: $showingThumbnailPicker) {
+            MediaPicker(
+                mediaType: .photo,
+                onSelection: { _, image in
+                    thumbnailImage = image
+                    if image != nil {
+                        uploadStatus = "Thumbnail selected"
+                    }
+                }
+            )
         }
         .onAppear {
             // Sign in anonymously if not already signed in
@@ -235,7 +212,211 @@ struct UploadView: View {
         }
     }
     
-    // MARK: - Authentication
+    // MARK: - Audio Selection Section
+    private var audioSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Audio File")
+                .font(.headline)
+                .foregroundColor(.secondary)
+                .padding(.horizontal)
+            
+            HStack(spacing: 12) {
+                // Files Button
+                Button(action: {
+                    isFilePickerPresented = true
+                }) {
+                    VStack {
+                        Image(systemName: "folder.badge.plus")
+                            .font(.title2)
+                        Text("Files")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .foregroundColor(.blue)
+                    .cornerRadius(10)
+                }
+                
+                // Camera Roll Button (for audio from videos)
+                Button(action: {
+                    showingImagePicker = true
+                }) {
+                    VStack {
+                        Image(systemName: "photo.on.rectangle")
+                            .font(.title2)
+                        Text("Camera Roll")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.green.opacity(0.1))
+                    .foregroundColor(.green)
+                    .cornerRadius(10)
+                }
+            }
+            .padding(.horizontal)
+            
+            // Show selected audio file
+            if let url = mediaURL {
+                selectedFileView(url: url, type: "Audio")
+            }
+        }
+    }
+    
+    // MARK: - Video Selection Section
+    private var videoSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Video File")
+                .font(.headline)
+                .foregroundColor(.secondary)
+                .padding(.horizontal)
+            
+            HStack(spacing: 12) {
+                // Files Button
+                Button(action: {
+                    isFilePickerPresented = true
+                }) {
+                    VStack {
+                        Image(systemName: "folder.badge.plus")
+                            .font(.title2)
+                        Text("Files")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .foregroundColor(.blue)
+                    .cornerRadius(10)
+                }
+                
+                // Camera Roll Button
+                Button(action: {
+                    showingImagePicker = true
+                }) {
+                    VStack {
+                        Image(systemName: "photo.stack")
+                            .font(.title2)
+                        Text("Camera Roll")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.purple.opacity(0.1))
+                    .foregroundColor(.purple)
+                    .cornerRadius(10)
+                }
+            }
+            .padding(.horizontal)
+            
+            // Show selected video file
+            if let url = mediaURL {
+                selectedFileView(url: url, type: "Video")
+            }
+        }
+    }
+    
+    // MARK: - Thumbnail Selection Section (Audio Only)
+    private var thumbnailSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Album Art (Optional)")
+                .font(.headline)
+                .foregroundColor(.secondary)
+                .padding(.horizontal)
+            
+            Button(action: {
+                showingThumbnailPicker = true
+            }) {
+                if let image = thumbnailImage {
+                    // Show selected thumbnail
+                    ZStack(alignment: .topTrailing) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 120)
+                            .clipped()
+                            .cornerRadius(10)
+                        
+                        Button(action: {
+                            thumbnailImage = nil
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.white)
+                                .background(Color.black.opacity(0.6))
+                                .clipShape(Circle())
+                        }
+                        .padding(8)
+                    }
+                } else {
+                    // Show placeholder
+                    VStack {
+                        Image(systemName: "photo.badge.plus")
+                            .font(.title)
+                        Text("Add Album Art")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 120)
+                    .background(Color.gray.opacity(0.1))
+                    .foregroundColor(.gray)
+                    .cornerRadius(10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(style: StrokeStyle(lineWidth: 2, dash: [5]))
+                            .foregroundColor(.gray.opacity(0.5))
+                    )
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+    
+    // MARK: - Selected File View
+    private func selectedFileView(url: URL, type: String) -> some View {
+        HStack {
+            Image(systemName: type == "Video" ? "video.fill" : "music.note")
+                .foregroundColor(.accentColor)
+                .font(.title3)
+            
+            VStack(alignment: .leading) {
+                Text(url.lastPathComponent)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                
+                Text(fileSizeString(for: url))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            Button(action: {
+                mediaURL = nil
+            }) {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundColor(.red)
+            }
+        }
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(8)
+        .padding(.horizontal)
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func fileSizeString(for url: URL) -> String {
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            if let size = attributes[.size] as? Int64 {
+                return ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
+            }
+        } catch {
+            // Ignore error
+        }
+        return "Unknown size"
+    }
     
     private func signInAnonymously() {
         Auth.auth().signInAnonymously { result, error in
@@ -246,8 +427,6 @@ struct UploadView: View {
             }
         }
     }
-    
-    // MARK: - Helper Functions
     
     private func isValidForUpload() -> Bool {
         if title.isEmpty { return false }
@@ -300,34 +479,6 @@ struct UploadView: View {
         }
     }
     
-    private func loadVideoFromPhotos(_ item: PhotosPickerItem?) async {
-        guard let item = item else { return }
-        
-        do {
-            // Load video as Data first
-            if let videoData = try await item.loadTransferable(type: Data.self) {
-                // Save to temporary file
-                let tempURL = FileManager.default.temporaryDirectory
-                    .appendingPathComponent("\(UUID().uuidString).mov")
-                
-                try videoData.write(to: tempURL)
-                
-                await MainActor.run {
-                    mediaURL = tempURL
-                    uploadStatus = "Video selected from Photos"
-                }
-            } else {
-                await MainActor.run {
-                    uploadStatus = "Failed to load video from Photos"
-                }
-            }
-        } catch {
-            await MainActor.run {
-                uploadStatus = "Error loading video: \(error.localizedDescription)"
-            }
-        }
-    }
-
     // MARK: - Upload Logic
     func uploadMedia() async {
         // Check authentication first
@@ -341,11 +492,11 @@ struct UploadView: View {
             uploadStatus = "Please fill in all required fields."
             return
         }
-
+        
         isUploading = true
         uploadStatus = "Starting upload..."
         uploadProgress = 0.0
-
+        
         if type == "YouTube" {
             // Extract video ID if needed
             let cleanedURL = cleanYouTubeURL(youtubeURL)
@@ -354,7 +505,8 @@ struct UploadView: View {
                 type: "youtube",
                 url: cleanedURL,
                 title: title,
-                isPlaying: false
+                isPlaying: false,
+                order: 0
             )
             await saveToFirestore(content: content)
         } else if let mediaURL = mediaURL {
@@ -383,13 +535,13 @@ struct UploadView: View {
         metadata.contentType = type == "Video" ? "video/mp4" : "audio/mpeg"
         
         do {
-            // Upload file
+            // Upload main file
             let _ = try await storageRef.putFileAsync(from: fileURL, metadata: metadata) { progress in
                 if let progress = progress {
                     let percentComplete = Double(progress.completedUnitCount) / Double(progress.totalUnitCount)
                     Task { @MainActor in
-                        self.uploadProgress = percentComplete
-                        self.uploadStatus = "Uploading... \(Int(percentComplete * 100))%"
+                        self.uploadProgress = percentComplete * 0.8 // 80% for main file
+                        self.uploadStatus = "Uploading \(type.lowercased())... \(Int(percentComplete * 100))%"
                     }
                 }
             }
@@ -397,12 +549,23 @@ struct UploadView: View {
             // Get download URL
             let downloadURL = try await storageRef.downloadURL()
             
+            // Upload thumbnail if it's audio and thumbnail exists
+            var thumbnailURL: String? = nil
+            if type == "Audio", let thumbnail = thumbnailImage {
+                uploadStatus = "Uploading album art..."
+                uploadProgress = 0.9
+                
+                thumbnailURL = try await uploadThumbnail(thumbnail)
+            }
+            
             // Save to Firestore
             let content = RadioContent(
                 type: type.lowercased(),
                 url: downloadURL.absoluteString,
                 title: title,
-                isPlaying: false
+                thumbnailURL: thumbnailURL,
+                isPlaying: false,
+                order: 0
             )
             
             await saveToFirestore(content: content)
@@ -414,111 +577,199 @@ struct UploadView: View {
             }
         }
     }
-
+    
+    private func uploadThumbnail(_ image: UIImage) async throws -> String {
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            throw NSError(domain: "UploadError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to convert image"])
+        }
+        
+        let fileName = "\(UUID().uuidString).jpg"
+        let storageRef = Storage.storage().reference().child("radio_media/thumbnails/\(fileName)")
+        
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+        
+        _ = try await storageRef.putDataAsync(imageData, metadata: metadata)
+        let downloadURL = try await storageRef.downloadURL()
+        
+        return downloadURL.absoluteString
+    }
+    //MARK: - Save to Firestore function
     func saveToFirestore(content: RadioContent) async {
         let db = Firestore.firestore()
-        
         do {
-            try await db.collection("radioFlow").addDocument(data: [
-                "type": content.type,
-                "url": content.url,
-                "title": content.title,
-                "isPlaying": content.isPlaying,
-                "createdAt": FieldValue.serverTimestamp()
-            ])
+            // 1️⃣ Find current max order
+            let snapshot = try await db.collection("radioFlow")
+                .order(by: "order", descending: true)
+                .limit(to: 1)
+                .getDocuments()
+            let maxOrder = snapshot.documents.first?
+                .data()["order"] as? Int ?? -1
+            
+            // 2️⃣ Build your data including new order
+            var data: [String: Any] = [
+                "type":        content.type,
+                "url":         content.url,
+                "title":       content.title,
+                "isPlaying":   content.isPlaying,
+                "order":       maxOrder + 1,           // next slot
+                "createdAt":   FieldValue.serverTimestamp()
+            ]
+            if let thumb = content.thumbnailURL {
+                data["thumbnailURL"] = thumb
+            }
+            
+            // 3️⃣ Save it
+            try await db.collection("radioFlow").addDocument(data: data)
             
             await MainActor.run {
-                self.uploadStatus = "Upload successful! 🎉"
-                // Reset form
+                uploadStatus = "Upload successful! 🎉"
+                // reset your form state…
                 self.title = ""
                 self.youtubeURL = ""
                 self.mediaURL = nil
                 self.selectedPhotoItem = nil
+                self.thumbnailImage = nil
                 self.isUploading = false
                 self.uploadProgress = 0.0
             }
             
-            // Update radio state
-            try? await db.collection("radioState").document("current").updateData([
-                "lastUpdated": FieldValue.serverTimestamp()
-            ])
+            // 4️⃣ Optionally bump your radioState timestamp
+            try? await db.collection("radioState")
+                .document("current")
+                .updateData(["lastUpdated": FieldValue.serverTimestamp()])
             
         } catch {
             await MainActor.run {
-                self.uploadStatus = "Save failed: \(error.localizedDescription)"
-                self.isUploading = false
+                uploadStatus = "Save failed: \(error.localizedDescription)"
+                isUploading = false
             }
         }
     }
-}
-
-// MARK: - UIImagePickerController Wrapper
-struct ImagePicker: UIViewControllerRepresentable {
-    let sourceType: UIImagePickerController.SourceType
-    let mediaType: MediaType
-    let completion: (URL?) -> Void
     
-    enum MediaType {
-        case video
-        case image
-    }
     
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = sourceType
-        picker.delegate = context.coordinator
-        
-        if mediaType == .video {
-            picker.mediaTypes = ["public.movie"]
-            picker.videoQuality = .typeHigh
-        } else {
-            picker.mediaTypes = ["public.image"]
+    // MARK: - Media Picker
+    struct MediaPicker: UIViewControllerRepresentable {
+        enum MediaType {
+            case video
+            case audio
+            case photo
         }
         
-        return picker
-    }
-    
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: ImagePicker
+        let mediaType: MediaType
+        let onSelection: (URL?, UIImage?) -> Void
         
-        init(_ parent: ImagePicker) {
-            self.parent = parent
-        }
-        
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-            picker.dismiss(animated: true)
+        func makeUIViewController(context: Context) -> UIImagePickerController {
+            let picker = UIImagePickerController()
+            picker.sourceType = .photoLibrary
+            picker.delegate = context.coordinator
             
-            if parent.mediaType == .video {
-                if let videoURL = info[.mediaURL] as? URL {
-                    // Copy video to temp directory
-                    let tempURL = FileManager.default.temporaryDirectory
-                        .appendingPathComponent("\(UUID().uuidString).mov")
-                    
-                    do {
-                        try FileManager.default.copyItem(at: videoURL, to: tempURL)
-                        parent.completion(tempURL)
-                    } catch {
-                        print("Error copying video: \(error)")
-                        parent.completion(nil)
+            switch mediaType {
+            case .video:
+                picker.mediaTypes = ["public.movie"]
+                picker.videoQuality = .typeHigh
+            case .audio:
+                // For audio from videos in camera roll
+                picker.mediaTypes = ["public.movie"]
+            case .photo:
+                picker.mediaTypes = ["public.image"]
+            }
+            
+            return picker
+        }
+        
+        func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+        
+        func makeCoordinator() -> Coordinator {
+            Coordinator(self)
+        }
+        
+        class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+            let parent: MediaPicker
+            
+            init(_ parent: MediaPicker) {
+                self.parent = parent
+            }
+            
+            func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+                picker.dismiss(animated: true)
+                
+                switch parent.mediaType {
+                case .video, .audio:
+                    if let videoURL = info[.mediaURL] as? URL {
+                        // Copy video to temp directory
+                        let tempURL = FileManager.default.temporaryDirectory
+                            .appendingPathComponent("\(UUID().uuidString).mov")
+                        
+                        do {
+                            try FileManager.default.copyItem(at: videoURL, to: tempURL)
+                            parent.onSelection(tempURL, nil)
+                        } catch {
+                            print("Error copying video: \(error)")
+                            parent.onSelection(nil, nil)
+                        }
+                    }
+                case .photo:
+                    if let image = info[.originalImage] as? UIImage {
+                        parent.onSelection(nil, image)
                     }
                 }
             }
-        }
-        
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            picker.dismiss(animated: true)
-            parent.completion(nil)
+            
+            func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+                picker.dismiss(animated: true)
+                parent.onSelection(nil, nil)
+            }
         }
     }
+    
 }
-
 // MARK: - Preview
 #Preview {
     UploadView()
 }
+
+//MARK: -  OLD CODE
+//func saveToFirestore(content: RadioContent) async {
+//    let db = Firestore.firestore()
+//    
+//    do {
+//        var data: [String: Any] = [
+//            "type": content.type,
+//            "url": content.url,
+//            "title": content.title,
+//            "isPlaying": content.isPlaying,
+//            "createdAt": FieldValue.serverTimestamp()
+//        ]
+//        
+//        // Add thumbnail URL if exists
+//        if let thumbnailURL = content.thumbnailURL {
+//            data["thumbnailURL"] = thumbnailURL
+//        }
+//        
+//        try await db.collection("radioFlow").addDocument(data: data)
+//        
+//        await MainActor.run {
+//            self.uploadStatus = "Upload successful! 🎉"
+//            // Reset form
+//            self.title = ""
+//            self.youtubeURL = ""
+//            self.mediaURL = nil
+//            self.selectedPhotoItem = nil
+//            self.thumbnailImage = nil
+//            self.isUploading = false
+//            self.uploadProgress = 0.0
+//        }
+//        
+//        // Update radio state
+//        try? await db.collection("radioState").document("current").updateData([
+//            "lastUpdated": FieldValue.serverTimestamp()
+//        ])
+//        
+//    } catch {
+//        await MainActor.run {
+//            self.uploadStatus = "Save failed: \(error.localizedDescription)"
+//            self.isUploading = false
+//        }
+//    }
+//}
