@@ -177,7 +177,7 @@ struct UploadView: View {
             isPresented: $isFilePickerPresented,
             allowedContentTypes: type == "Video" ?
             [.movie, .mpeg4Movie, .quickTimeMovie, .video] :
-                [.audio, .mp3, .wav, .mpeg4Audio, .m4a],
+                [.audio, .mp3, .wav, .mpeg4Audio],
             allowsMultipleSelection: false
         ) { result in
             handleFileImporterResult(result)

@@ -9,7 +9,7 @@
 // import WebKit
 // import FirebaseFirestore
 // import FirebaseFirestoreSwift
-
+//
 // // MARK: - Color Extension
 // extension Color {
 //     static let deepTeal = Color(red: 61/255, green: 90/255, blue: 128/255)
@@ -17,7 +17,7 @@
 //     static let peachGold = Color(red: 254/255, green: 209/255, blue: 140/255)
 //     static let charcoal = Color(red: 51/255, green: 51/255, blue: 51/255)
 // }
-
+//
 // // MARK: - Data Model
 // struct RadioContent: Codable, Identifiable {
 //     @DocumentID var id: String?
@@ -29,7 +29,7 @@
 //     var duration: Double? = nil
 //     var order: Int = 0
 // }
-
+//
 // // MARK: - Icecast Status Structures
 // struct IcecastStats: Codable {
 //     struct Source: Codable {
@@ -43,7 +43,7 @@
 //         let source: [Source]
 //     }
 // }
-
+//
 // // MARK: - ViewModel Protocol
 // protocol RadioViewModelProtocol: ObservableObject {
 //     var playlist: [RadioContent] { get }
@@ -60,10 +60,10 @@
 //     var currentLiveType: String { get }
 //     var player: AVPlayer? { get }
 //     var isPlaying: Bool { get }
-    
+//    
 //     func formatTime(_ seconds: Double) -> String
 // }
-
+//
 // // MARK: - Main ViewModel
 // class RadioViewModel: NSObject, ObservableObject, RadioViewModelProtocol {
 //     @Published var playlist: [RadioContent] = []
@@ -79,7 +79,7 @@
 //     @Published var isBuffering: Bool = false
 //     @Published var currentLiveType: String = "icecast"
 //     @Published var isPlaying: Bool = true
-    
+//    
 //     private let db = Firestore.firestore()
 //     private var playlistListener: ListenerRegistration?
 //     private var liveStatusListener: ListenerRegistration?
@@ -90,11 +90,11 @@
 //     private var timeObserver: Any?
 //     private var resumeIndex: Int? = nil
 //     private var resumeTime: Double? = nil
-    
+//    
 //     // Live stream URLs
 //     private let icecastURL = "https://radio.pmcshondon.com/dreamhouse"
 //     private let statusURL = "https://radio.pmcshondon.com/status-json.xsl"
-    
+//    
 //     override init() {
 //         super.init()
 //         subscribeToRadioFlow()
@@ -102,7 +102,7 @@
 //         startLivePolling()
 //         setupAudioSession()
 //     }
-    
+//    
 //     deinit {
 //         playlistListener?.remove()
 //         liveStatusListener?.remove()
@@ -111,7 +111,7 @@
 //         if let obs = endObserver { NotificationCenter.default.removeObserver(obs) }
 //         if let timeObs = timeObserver { player?.removeTimeObserver(timeObs) }
 //     }
-    
+//    
 //     private func setupAudioSession() {
 //         do {
 //             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
@@ -120,7 +120,7 @@
 //             print("Failed to setup audio session: \(error)")
 //         }
 //     }
-    
+//    
 //     private func subscribeToRadioFlow() {
 //         isLoading = true
 //         playlistListener = db.collection("radioFlow")
@@ -134,7 +134,7 @@
 //                     do {
 //                         self.playlist = try docs.compactMap { try $0.data(as: RadioContent.self) }
 //                         self.isLoading = false
-                        
+//                        
 //                         if !self.isLive && !self.playlist.isEmpty && self.player == nil {
 //                             self.currentIndex = 0
 //                             self.playCurrent()
@@ -147,19 +147,19 @@
 //                 }
 //             }
 //     }
-    
+//    
 //     private func subscribeLiveStatus() {
 //         liveStatusListener = db.collection("liveStatus")
 //             .document("current")
 //             .addSnapshotListener { [weak self] snapshot, error in
 //                 guard let self = self,
 //                       let data = snapshot?.data() else { return }
-                
+//                
 //                 let isLiveNow = data["isLive"] as? Bool ?? false
 //                 let liveType = data["type"] as? String ?? "icecast"
 //                 let liveURL = data["url"] as? String
 //                 let liveTitle = data["title"] as? String
-                
+//                
 //                 DispatchQueue.main.async {
 //                     if isLiveNow && !self.isLive && liveURL != nil {
 //                         // For Twitch, optionally verify stream is actually live
@@ -195,21 +195,21 @@
 //                 }
 //             }
 //     }
-    
+//    
 //     // Optional: Add Twitch live verification
 //     private func verifyTwitchLive(url: String, completion: @escaping (Bool) -> Void) {
 //         // For now, just trust Firestore setting
 //         // In production, you could check Twitch API
 //         completion(true)
 //     }
-    
+//    
 //     private func startLivePolling() {
 //         liveTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
 //             self?.checkIcecastStatus()
 //         }
 //         checkIcecastStatus()
 //     }
-    
+//    
 //     private func checkIcecastStatus() {
 //         guard let url = URL(string: statusURL) else { return }
 //         URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
@@ -217,12 +217,12 @@
 //                   let data = data,
 //                   let stats = try? JSONDecoder().decode(IcecastStats.self, from: data)
 //             else { return }
-            
+//            
 //             let liveMount = stats.icestats.source.first { $0.mount == "/dreamhouse" }
 //             DispatchQueue.main.async {
 //                 let nowLive = (liveMount?.listeners ?? 0) > 0
 //                 self.listenerCount = liveMount?.listeners ?? 0
-                
+//                
 //                 if nowLive && !self.isLive {
 //                     self.resumeIndex = self.currentIndex
 //                     self.resumeTime = self.currentTime
@@ -242,20 +242,20 @@
 //             }
 //         }.resume()
 //     }
-    
+//    
 //     private func updateNextUp() {
 //         guard !playlist.isEmpty else { return }
 //         let nextIndex = (currentIndex + 1) % playlist.count
 //         nextUpTitle = playlist[nextIndex].title
 //     }
-    
+//    
 //     private func playCurrent(resumeTime: Double? = nil) {
 //         guard !playlist.isEmpty else { return }
 //         let item = playlist[currentIndex]
 //         setupPlayer(item: item, onEnd: advance, resumeTime: resumeTime)
 //         updateNextUp()
 //     }
-    
+//    
 //     private func playLiveStream() {
 //         let liveItem = RadioContent(
 //             type: "live",
@@ -264,7 +264,7 @@
 //         )
 //         setupPlayer(item: liveItem, onEnd: nil)
 //     }
-    
+//    
 //     private func playLiveContent(url: String, type: String) {
 //         let liveItem = RadioContent(
 //             type: type,
@@ -273,13 +273,13 @@
 //         )
 //         setupPlayer(item: liveItem, onEnd: nil)
 //     }
-    
+//    
 //     func advance() {
 //         guard !playlist.isEmpty else { return }
 //         currentIndex = (currentIndex + 1) % playlist.count
 //         playCurrent()
 //     }
-    
+//    
 //     private func setupPlayer(item: RadioContent, onEnd: (() -> Void)?, resumeTime: Double? = nil) {
 //         if let obs = endObserver {
 //             NotificationCenter.default.removeObserver(obs)
@@ -288,39 +288,39 @@
 //             player?.removeTimeObserver(timeObs)
 //             timeObserver = nil
 //         }
-        
+//        
 //         player?.pause()
 //         player = nil
 //         currentTime = 0
 //         duration = 0
 //         isBuffering = true
-        
+//        
 //         guard let url = URL(string: item.url) else {
 //             isBuffering = false
 //             return
 //         }
-        
+//        
 //         if item.type == "youtube" || item.type == "twitch" {
 //             isBuffering = false
 //             return
 //         }
-        
+//        
 //         player = AVPlayer(url: url)
-        
+//        
 //         if item.type == "video" {
 //             player?.currentItem?.videoComposition = AVVideoComposition(propertiesOf: player!.currentItem!.asset)
 //         }
-        
+//        
 //         player?.currentItem?.addObserver(self, forKeyPath: "playbackBufferEmpty", options: .new, context: nil)
 //         player?.currentItem?.addObserver(self, forKeyPath: "playbackLikelyToKeepUp", options: .new, context: nil)
-        
+//        
 //         if let finish = onEnd {
 //             endObserver = NotificationCenter.default.addObserver(
 //                 forName: .AVPlayerItemDidPlayToEndTime,
 //                 object: player?.currentItem,
 //                 queue: .main) { _ in finish() }
 //         }
-        
+//        
 //         let interval = CMTime(seconds: 0.5, preferredTimescale: 600)
 //         timeObserver = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
 //             guard let self = self else { return }
@@ -329,14 +329,14 @@
 //                 self.duration = duration.seconds
 //             }
 //         }
-        
+//        
 //         if let t = resumeTime, t > 0 {
 //             player?.seek(to: CMTime(seconds: t, preferredTimescale: 600))
 //         }
 //         player?.play()
 //         isPlaying = true
 //     }
-    
+//    
 //     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
 //         if keyPath == "playbackBufferEmpty" {
 //             isBuffering = true
@@ -344,7 +344,7 @@
 //             isBuffering = false
 //         }
 //     }
-    
+//    
 //     func formatTime(_ seconds: Double) -> String {
 //         if seconds.isNaN || seconds.isInfinite { return "--:--" }
 //         let mins = Int(seconds) / 60
@@ -352,7 +352,7 @@
 //         return String(format: "%d:%02d", mins, secs)
 //     }
 // }
-
+//
 // // MARK: - Mock ViewModel
 // class MockRadioViewModel: ObservableObject, RadioViewModelProtocol {
 //     @Published var playlist: [RadioContent] = [
@@ -373,7 +373,7 @@
 //     @Published var currentLiveType: String = "icecast"
 //     @Published var player: AVPlayer? = nil
 //     @Published var isPlaying: Bool = true
-    
+//    
 //     func formatTime(_ seconds: Double) -> String {
 //         if seconds.isNaN || seconds.isInfinite { return "--:--" }
 //         let mins = Int(seconds) / 60
@@ -381,46 +381,46 @@
 //         return String(format: "%d:%02d", mins, secs)
 //     }
 // }
-
+//
 // // MARK: - Main Radio View
 // struct RadioView<VM: RadioViewModelProtocol>: View {
 //     @StateObject var vm: VM
 //     @State private var showingInfo = false
 //     @Namespace private var animation
-    
+//    
 //     var body: some View {
 //         ZStack {
 //             // Dreamy gradient background
 //             DreamyBackground()
-            
+//            
 //             VStack(spacing: 0) {
 //                 // Custom Navigation Bar
 //                 RadioNavBar(showingInfo: $showingInfo)
 //                     .padding(.horizontal)
 //                     .padding(.top, 8)
-                
+//                
 //                 // Main Content
 //                 ScrollView(.vertical, showsIndicators: false) {
 //                     VStack(spacing: 24) {
 //                         // Scrolling Ticker
 //                         ScrollingTicker(vm: vm)
 //                             .padding(.top, 8)
-                        
+//                        
 //                         // Live Indicator
 //                         if vm.isLive {
 //                             LiveIndicator(listenerCount: vm.listenerCount)
 //                                 .padding(.top, 8)
 //                                 .transition(.scale.combined(with: .opacity))
 //                         }
-                        
+//                        
 //                         // Main Player
 //                         DreamyPlayerCard(vm: vm, namespace: animation)
 //                             .padding(.horizontal)
-                        
+//                        
 //                         // Now Playing Info
 //                         NowPlayingInfo(vm: vm)
 //                             .padding(.horizontal)
-                        
+//                        
 //                         // Up Next Section
 //                         if !vm.isLive && !vm.nextUpTitle.isEmpty {
 //                             UpNextCard(title: vm.nextUpTitle)
@@ -431,7 +431,7 @@
 //                     .padding(.bottom, 32)
 //                 }
 //             }
-            
+//            
 //             // Loading Overlay
 //             if vm.isLoading {
 //                 LoadingOverlay()
@@ -440,18 +440,18 @@
 //         .preferredColorScheme(.dark)
 //     }
 // }
-
+//
 // // Extension for default init
 // extension RadioView where VM == RadioViewModel {
 //     init() {
 //         self.init(vm: RadioViewModel())
 //     }
 // }
-
+//
 // // MARK: - Dreamy Background 
 // struct DreamyBackground: View {
 //     @State private var animateGradient = false
-    
+//    
 //     var body: some View {
 //         ZStack {
 //             // Base gradient
@@ -464,7 +464,7 @@
 //                 startPoint: .topLeading,
 //                 endPoint: .bottomTrailing
 //             )
-            
+//            
 //             // Animated overlay
 //             LinearGradient(
 //                 colors: [
@@ -480,7 +480,7 @@
 //                     .repeatForever(autoreverses: true),
 //                 value: animateGradient
 //             )
-            
+//            
 //             // Noise texture overlay
 //             NoiseOverlay()
 //         }
@@ -490,7 +490,7 @@
 //         }
 //     }
 // }
-
+//
 // // MARK: - Noise Overlay
 // struct NoiseOverlay: View {
 //     var body: some View {
@@ -500,7 +500,7 @@
 //                     let x = CGFloat.random(in: 0...size.width)
 //                     let y = CGFloat.random(in: 0...size.height)
 //                     let opacity = Double.random(in: 0.02...0.08)
-                    
+//                    
 //                     context.fill(
 //                         Path(ellipseIn: CGRect(x: x, y: y, width: 1, height: 1)),
 //                         with: .color(.white.opacity(opacity))
@@ -511,7 +511,7 @@
 //         .allowsHitTesting(false)
 //     }
 // }
-
+//
 // // MARK: - Scrolling Ticker
 // struct ScrollingTicker<VM: RadioViewModelProtocol>: View {
 //     @ObservedObject var vm: VM
@@ -520,7 +520,7 @@
 //     @State private var tickerMessages: [String] = []
 //     @State private var db = Firestore.firestore()
 //     @State private var tickerListener: ListenerRegistration?
-    
+//    
 //     // Fallback messages if no Firestore messages
 //     let fallbackMessages = [
 //         "🎵 Welcome to DreamHouse Radio - Your 24/7 Vibe Station 🎵",
@@ -529,9 +529,9 @@
 //         "💫 Follow @shondon11 for live DJ sets 💫",
 //         "🎧 Best experienced with good headphones 🎧"
 //     ]
-    
+//    
 //     @State private var currentMessageIndex = 0
-    
+//    
 //     var tickerText: String {
 //         let messages = tickerMessages.isEmpty ? fallbackMessages : tickerMessages
 //         let currentMessage = messages.isEmpty ? "" : messages[currentMessageIndex % messages.count]
@@ -546,7 +546,7 @@
 //             return currentMessage + " • "
 //         }
 //     }
-    
+//    
 //     var body: some View {
 //         GeometryReader { geometry in
 //             ZStack {
@@ -566,7 +566,7 @@
 //                         Rectangle()
 //                             .stroke(Color.skyTeal.opacity(0.3), lineWidth: 1)
 //                     )
-                
+//                
 //                 // Scrolling text
 //                 HStack(spacing: 0) {
 //                     Text(tickerText)
@@ -580,7 +580,7 @@
 //                                 }
 //                             }
 //                         )
-                    
+//                    
 //                     Text(tickerText)
 //                         .font(.system(size: 14, weight: .medium, design: .monospaced))
 //                         .foregroundColor(.peachGold)
@@ -607,10 +607,10 @@
 //         .frame(height: 32)
 //         .shadow(color: Color.black.opacity(0.3), radius: 4, y: 2)
 //     }
-    
+//    
 //     private func startScrolling() {
 //         scrollOffset = 0
-        
+//        
 //         // ESPN-style continuous scrolling - faster and smoother
 //         withAnimation(
 //             Animation.linear(duration: Double(textSize.width) / 50)
@@ -619,14 +619,14 @@
 //             scrollOffset = -textSize.width
 //         }
 //     }
-    
+//    
 //     private func resetScrolling() {
 //         scrollOffset = 0
 //         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
 //             startScrolling()
 //         }
 //     }
-    
+//    
 //     private func startMessageRotation() {
 //         Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { _ in
 //             if !vm.isLive {
@@ -671,23 +671,23 @@
 //             }
 //     }
 // }
-
+//
 // // MARK: - Navigation Bar (Title)
 // struct RadioNavBar: View {
 //     @Binding var showingInfo: Bool
-    
+//    
 //     var body: some View {
 //         HStack {
 //             Text("DREAMHOUSE")
 //                 .font(.system(size: 28, weight: .heavy, design: .rounded))
 //                 .foregroundColor(.white)
-            
+//            
 //             Text("RADIO")
 //                 .font(.system(size: 28, weight: .thin, design: .rounded))
 //                 .foregroundColor(.skyTeal)
-            
+//            
 //             Spacer()
-            
+//            
 //             Button(action: { showingInfo.toggle() }) {
 //                 Image(systemName: "info.circle.fill")
 //                     .font(.system(size: 24))
@@ -697,12 +697,12 @@
 //         .padding(.vertical, 12)
 //     }
 // }
-
+//
 // // MARK: - Live Indicator
 // struct LiveIndicator: View {
 //     let listenerCount: Int
 //     @State private var pulse = false
-    
+//    
 //     var body: some View {
 //         HStack(spacing: 12) {
 //             // Pulsing dot
@@ -720,15 +720,15 @@
 //                         .repeatForever(autoreverses: false),
 //                     value: pulse
 //                 )
-            
+//            
 //             Text("LIVE")
 //                 .font(.system(size: 16, weight: .bold, design: .rounded))
 //                 .foregroundColor(.white)
-            
+//            
 //             if listenerCount > 0 {
 //                 Text("•")
 //                     .foregroundColor(.white.opacity(0.5))
-                
+//                
 //                 HStack(spacing: 4) {
 //                     Image(systemName: "person.2.fill")
 //                         .font(.system(size: 14))
@@ -753,13 +753,13 @@
 //         }
 //     }
 // }
-
+//
 // // MARK: - Dreamy Player Card
 // struct DreamyPlayerCard<VM: RadioViewModelProtocol>: View {
 //     @ObservedObject var vm: VM
 //     let namespace: Namespace.ID
 //     @State private var showWaveform = false
-    
+//    
 //     var body: some View {
 //         VStack(spacing: 0) {
 //             // Media Display
@@ -771,7 +771,7 @@
 //                         RoundedRectangle(cornerRadius: 24)
 //                             .stroke(Color.white.opacity(0.1), lineWidth: 1)
 //                     )
-                
+//                
 //                 // Content
 //                 Group {
 //                     if !vm.playlist.isEmpty {
@@ -819,7 +819,7 @@
 //                     }
 //                 }
 //                 .frame(height: 280)
-                
+//                
 //                 // Buffering Overlay
 //                 if vm.isBuffering {
 //                     BufferingOverlay()
@@ -827,7 +827,7 @@
 //             }
 //             .frame(height: 280)
 //             .shadow(color: Color.black.opacity(0.3), radius: 20, y: 10)
-            
+//            
 //             // Progress Bar (for non-live content)
 //             if !vm.isLive && vm.duration > 0 {
 //                 DreamyProgressBar(
@@ -842,13 +842,13 @@
 //         .animation(.easeInOut(duration: 0.3), value: vm.isLive)
 //     }
 // }
-
+//
 // // MARK: - Dreamy Audio Visualizer
 // struct DreamyAudioVisualizer: View {
 //     @State private var amplitudes: [CGFloat] = Array(repeating: 0.3, count: 40)
 //     @State private var phase: CGFloat = 0
 //     let timer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
-    
+//    
 //     var body: some View {
 //         GeometryReader { geometry in
 //             ZStack {
@@ -861,24 +861,24 @@
 //                     startPoint: .top,
 //                     endPoint: .bottom
 //                 )
-                
+//                
 //                 // Waveform
 //                 Canvas { context, size in
 //                     let width = size.width
 //                     let height = size.height
 //                     let barWidth = width / CGFloat(amplitudes.count)
 //                     let centerY = height / 2
-                    
+//                    
 //                     for (index, amplitude) in amplitudes.enumerated() {
 //                         let x = CGFloat(index) * barWidth
 //                         let barHeight = amplitude * height * 0.8
-                        
+//                        
 //                         // Create gradient for each bar
 //                         let gradient = Gradient(colors: [
 //                             Color.skyTeal,
 //                             Color.peachGold.opacity(0.8)
 //                         ])
-                        
+//                        
 //                         // Top bar
 //                         let topRect = CGRect(
 //                             x: x + barWidth * 0.2,
@@ -886,7 +886,7 @@
 //                             width: barWidth * 0.6,
 //                             height: barHeight / 2
 //                         )
-                        
+//                        
 //                         // Bottom bar (mirror)
 //                         let bottomRect = CGRect(
 //                             x: x + barWidth * 0.2,
@@ -894,19 +894,19 @@
 //                             width: barWidth * 0.6,
 //                             height: barHeight / 2
 //                         )
-                        
+//                        
 //                         context.fill(
 //                             RoundedRectangle(cornerRadius: barWidth * 0.3).path(in: topRect),
 //                             with: .linearGradient(gradient, startPoint: CGPoint(x: 0.5, y: 0.0), endPoint: CGPoint(x: 0.5, y: 1.0))
 //                         )
-                        
+//                        
 //                         context.fill(
 //                             RoundedRectangle(cornerRadius: barWidth * 0.3).path(in: bottomRect),
 //                             with: .linearGradient(gradient, startPoint: CGPoint(x: 0.5, y: 0.0), endPoint: CGPoint(x: 0.5, y: 1.0))
 //                         )
 //                     }
 //                 }
-                
+//                
 //                 // Center orb
 //                 Circle()
 //                     .fill(
@@ -941,11 +941,11 @@
 //         }
 //     }
 // }
-
+//
 // // MARK: - Optimized Video Player
 // struct OptimizedVideoPlayer: View {
 //     let player: AVPlayer
-    
+//    
 //     var body: some View {
 //         VideoPlayer(player: player)
 //             .disabled(true) // Prevent user interaction
@@ -954,40 +954,40 @@
 //             }
 //     }
 // }
-
+//
 // // MARK: - Optimized YouTube View
 // struct OptimizedYouTubeView: UIViewRepresentable {
 //     let url: String
-    
+//    
 //     func makeUIView(context: Context) -> WKWebView {
 //         let config = WKWebViewConfiguration()
 //         config.allowsInlineMediaPlayback = true
 //         config.mediaTypesRequiringUserActionForPlayback = []
 //         config.allowsPictureInPictureMediaPlayback = false
-        
+//        
 //         let webView = WKWebView(frame: .zero, configuration: config)
 //         webView.scrollView.isScrollEnabled = false
 //         webView.isUserInteractionEnabled = false
 //         webView.backgroundColor = .clear
 //         webView.isOpaque = false
-        
+//        
 //         return webView
 //     }
-    
+//    
 //     func updateUIView(_ uiView: WKWebView, context: Context) {
 //         #if DEBUG
 //         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
 //             return
 //         }
 //         #endif
-        
+//        
 //         let embedURL = convertToEmbedURL(url)
 //         if let u = URL(string: embedURL) {
 //             let request = URLRequest(url: u)
 //             uiView.load(request)
 //         }
 //     }
-    
+//    
 //     private func convertToEmbedURL(_ urlString: String) -> String {
 //         var videoID = ""
 //         if urlString.contains("youtube.com/watch?v=") {
@@ -997,37 +997,37 @@
 //         } else if urlString.contains("youtube.com/embed/") {
 //             return urlString
 //         }
-        
+//        
 //         return "https://www.youtube.com/embed/\(videoID)?autoplay=1&controls=0&modestbranding=1&playsinline=1&rel=0&showinfo=0&loop=1&playlist=\(videoID)"
 //     }
 // }
-
+//
 // // MARK: - Optimized Twitch View
 // struct OptimizedTwitchView: UIViewRepresentable {
 //     let url: String
-    
+//    
 //     func makeUIView(context: Context) -> WKWebView {
 //         let config = WKWebViewConfiguration()
 //         config.allowsInlineMediaPlayback = true
 //         config.mediaTypesRequiringUserActionForPlayback = []
 //         config.allowsPictureInPictureMediaPlayback = false
-        
+//        
 //         let webView = WKWebView(frame: .zero, configuration: config)
 //         webView.scrollView.isScrollEnabled = false
 //         webView.isUserInteractionEnabled = false
 //         webView.backgroundColor = .clear
 //         webView.isOpaque = false
-        
+//        
 //         return webView
 //     }
-    
+//    
 //     func updateUIView(_ uiView: WKWebView, context: Context) {
 //         #if DEBUG
 //         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
 //             return
 //         }
 //         #endif
-        
+//        
 //         let channelName = extractTwitchChannel(from: url)
 //         let embedHTML = """
 // <!DOCTYPE html>
@@ -1072,20 +1072,20 @@
 // """
 //         uiView.loadHTMLString(embedHTML, baseURL: nil)
 //     }
-    
+//    
 //     private func extractTwitchChannel(from url: String) -> String {
 //         return url.replacingOccurrences(of: "https://www.twitch.tv/", with: "")
 //             .replacingOccurrences(of: "https://twitch.tv/", with: "")
 //             .components(separatedBy: "/").first ?? ""
 //     }
 // }
-
+//
 // // MARK: - Dreamy Progress Bar
 // struct DreamyProgressBar: View {
 //     let currentTime: Double
 //     let duration: Double
 //     let formatTime: (Double) -> String
-    
+//    
 //     var body: some View {
 //         VStack(spacing: 8) {
 //             // Progress bar
@@ -1095,7 +1095,7 @@
 //                     RoundedRectangle(cornerRadius: 4)
 //                         .fill(Color.white.opacity(0.1))
 //                         .frame(height: 8)
-                    
+//                    
 //                     // Progress fill
 //                     RoundedRectangle(cornerRadius: 4)
 //                         .fill(
@@ -1107,7 +1107,7 @@
 //                         )
 //                         .frame(width: geometry.size.width * CGFloat(currentTime / duration), height: 8)
 //                         .animation(.linear(duration: 0.1), value: currentTime)
-                    
+//                    
 //                     // Glow effect
 //                     RoundedRectangle(cornerRadius: 4)
 //                         .fill(
@@ -1123,15 +1123,15 @@
 //                 }
 //             }
 //             .frame(height: 8)
-            
+//            
 //             // Time labels
 //             HStack {
 //                 Text(formatTime(currentTime))
 //                     .font(.system(size: 12, weight: .medium, design: .monospaced))
 //                     .foregroundColor(.white.opacity(0.7))
-                
+//                
 //                 Spacer()
-                
+//                
 //                 Text(formatTime(duration))
 //                     .font(.system(size: 12, weight: .medium, design: .monospaced))
 //                     .foregroundColor(.white.opacity(0.7))
@@ -1139,13 +1139,13 @@
 //         }
 //     }
 // }
-
+//
 // // MARK: - Now Playing Info
 // struct NowPlayingInfo<VM: RadioViewModelProtocol>: View {
 //     @ObservedObject var vm: VM
 //     @State private var textOffset: CGFloat = 0
 //     @State private var needsScrolling = false
-    
+//    
 //     var body: some View {
 //         VStack(spacing: 12) {
 //             // Title with scrolling effect
@@ -1157,7 +1157,7 @@
 //                         .lineLimit(1)
 //                         .fixedSize()
 //                         .offset(x: needsScrolling ? textOffset : 0)
-                    
+//                    
 //                     if needsScrolling {
 //                         Text(currentTitle)
 //                             .font(.system(size: 28, weight: .bold, design: .rounded))
@@ -1176,7 +1176,7 @@
 //             }
 //             .frame(height: 35)
 //             .clipped()
-            
+//            
 //             // Artist/Type info
 //             if let artist = currentArtist {
 //                 Text(artist)
@@ -1203,7 +1203,7 @@
 //                 )
 //         )
 //     }
-    
+//    
 //     private var currentTitle: String {
 //         if vm.isLive {
 //             return vm.liveTrackTitle ?? "Live Stream"
@@ -1212,21 +1212,21 @@
 //         }
 //         return "No Track"
 //     }
-    
+//    
 //     private var currentArtist: String? {
 //         if !vm.isLive && !vm.playlist.isEmpty {
 //             return vm.playlist[vm.currentIndex].artist
 //         }
 //         return nil
 //     }
-    
+//    
 //     private func checkScrollingNeeded(geometry: GeometryProxy) {
 //         let textWidth = currentTitle.size(
 //             withAttributes: [.font: UIFont.systemFont(ofSize: 28, weight: .bold)]
 //         ).width
-        
+//        
 //         needsScrolling = textWidth > geometry.size.width
-        
+//        
 //         if needsScrolling {
 //             textOffset = 0
 //             withAnimation(
@@ -1238,29 +1238,29 @@
 //         }
 //     }
 // }
-
+//
 // // MARK: - Up Next Card
 // struct UpNextCard: View {
 //     let title: String
 //     @State private var isVisible = false
-    
+//    
 //     var body: some View {
 //         HStack(spacing: 16) {
 //             Image(systemName: "music.note.list")
 //                 .font(.system(size: 20))
 //                 .foregroundColor(.peachGold)
-            
+//            
 //             VStack(alignment: .leading, spacing: 4) {
 //                 Text("UP NEXT")
 //                     .font(.system(size: 12, weight: .semibold, design: .rounded))
 //                     .foregroundColor(.white.opacity(0.6))
-                
+//                
 //                 Text(title)
 //                     .font(.system(size: 16, weight: .medium, design: .rounded))
 //                     .foregroundColor(.white)
 //                     .lineLimit(1)
 //             }
-            
+//            
 //             Spacer()
 //         }
 //         .padding(20)
@@ -1290,20 +1290,20 @@
 //         }
 //     }
 // }
-
+//
 // // MARK: - Buffering Overlay
 // struct BufferingOverlay: View {
 //     @State private var isAnimating = false
-    
+//    
 //     var body: some View {
 //         ZStack {
 //             Color.black.opacity(0.5)
-            
+//            
 //             VStack(spacing: 16) {
 //                 ProgressView()
 //                     .progressViewStyle(CircularProgressViewStyle(tint: .skyTeal))
 //                     .scaleEffect(1.5)
-                
+//                
 //                 Text("Buffering...")
 //                     .font(.system(size: 14, weight: .medium, design: .rounded))
 //                     .foregroundColor(.white)
@@ -1317,16 +1317,16 @@
 //         .clipShape(RoundedRectangle(cornerRadius: 20))
 //     }
 // }
-
+//
 // // MARK: - Loading Overlay
 // struct LoadingOverlay: View {
 //     @State private var rotation: Double = 0
-    
+//    
 //     var body: some View {
 //         ZStack {
 //             Color.black.opacity(0.7)
 //                 .ignoresSafeArea()
-            
+//            
 //             VStack(spacing: 24) {
 //                 ZStack {
 //                     Circle()
@@ -1344,12 +1344,12 @@
 //                         )
 //                         .frame(width: 60, height: 60)
 //                         .rotationEffect(.degrees(rotation))
-                    
+//                    
 //                     Image(systemName: "music.note")
 //                         .font(.system(size: 24))
 //                         .foregroundColor(.white)
 //                 }
-                
+//                
 //                 Text("Loading your vibe...")
 //                     .font(.system(size: 16, weight: .medium, design: .rounded))
 //                     .foregroundColor(.white.opacity(0.8))
@@ -1365,7 +1365,7 @@
 //         }
 //     }
 // }
-
+//
 // // MARK: - Empty State View
 // struct EmptyStateView: View {
 //     var body: some View {
@@ -1373,7 +1373,7 @@
 //             Image(systemName: "music.quarternote.3")
 //                 .font(.system(size: 48))
 //                 .foregroundColor(.white.opacity(0.3))
-            
+//            
 //             Text("No tracks available")
 //                 .font(.system(size: 18, weight: .medium, design: .rounded))
 //                 .foregroundColor(.white.opacity(0.5))
@@ -1381,14 +1381,14 @@
 //         .frame(maxWidth: .infinity, maxHeight: .infinity)
 //     }
 // }
-
+//
 // // MARK: - Safe Array Extension
 // extension Array {
 //     subscript(safe index: Int) -> Element? {
 //         return indices.contains(index) ? self[index] : nil
 //     }
 // }
-
+//
 // // MARK: - String Extension for Size
 // extension String {
 //     func size(withAttributes attributes: [NSAttributedString.Key: Any]) -> CGSize {
@@ -1396,7 +1396,7 @@
 //         return nsString.size(withAttributes: attributes)
 //     }
 // }
-
+//
 // // MARK: - Preview
 // #Preview {
 //     RadioView(vm: MockRadioViewModel())
