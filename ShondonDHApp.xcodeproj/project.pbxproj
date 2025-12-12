@@ -33,11 +33,6 @@
 			path = ShondonDHApp;
 			sourceTree = "<group>";
 		};
-		EDC450442E17C5D000A478CE /* main */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = main;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,11 +60,10 @@
 		ED156B9A2E07844B0022FE0C = {
 			isa = PBXGroup;
 			children = (
-				EDC450442E17C5D000A478CE /* main */,
 				ED156BA42E07844B0022FE0C /* Products */,
-				ED156BB22E0786030022FE0C /* GoogleService-Info.plist */,
 				ED156BA52E07844B0022FE0C /* ShondonDHApp */,
 				EDC4504A2E17C68F00A478CE /* Info.plist */,
+				ED156BB22E0786030022FE0C /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -98,7 +92,6 @@
 			);
 			fileSystemSynchronizedGroups = (
 				ED156BA52E07844B0022FE0C /* ShondonDHApp */,
-				EDC450442E17C5D000A478CE /* main */,
 			);
 			name = ShondonDHApp;
 			packageProductDependencies = (

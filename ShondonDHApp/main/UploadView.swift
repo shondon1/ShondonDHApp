@@ -594,9 +594,30 @@ struct UploadView: View {
         
         return downloadURL.absoluteString
     }
+    
+    private func getMediaDuration(from url: URL) async -> Double? {
+        let asset = AVAsset(url: url)
+        
+        do {
+            let duration = try await asset.load(.duration)
+            let seconds = CMTimeGetSeconds(duration)
+            return seconds.isFinite ? seconds : nil
+        } catch {
+            print("Failed to get duration: \(error)")
+            return nil
+        }
+    }
     //MARK: - Save to Firestore function
     func saveToFirestore(content: RadioContent) async {
         let db = Firestore.firestore()
+        
+        var duration: Double = 180  // Default 3 minutes
+        if let mediaURL = mediaURL {
+            if let detectedDuration = await getMediaDuration(from: mediaURL) {
+                duration = detectedDuration
+            }
+        }
+        
         do {
             // 1️⃣ Find current max order
             let snapshot = try await db.collection("radioFlow")
@@ -612,7 +633,8 @@ struct UploadView: View {
                 "url":         content.url,
                 "title":       content.title,
                 "isPlaying":   content.isPlaying,
-                "order":       maxOrder + 1,           // next slot
+                "duration": duration,
+                "order":       maxOrder + 1,
                 "createdAt":   FieldValue.serverTimestamp()
             ]
             if let thumb = content.thumbnailURL {
@@ -728,48 +750,3 @@ struct UploadView: View {
 #Preview {
     UploadView()
 }
-
-//MARK: -  OLD CODE
-//func saveToFirestore(content: RadioContent) async {
-//    let db = Firestore.firestore()
-//    
-//    do {
-//        var data: [String: Any] = [
-//            "type": content.type,
-//            "url": content.url,
-//            "title": content.title,
-//            "isPlaying": content.isPlaying,
-//            "createdAt": FieldValue.serverTimestamp()
-//        ]
-//        
-//        // Add thumbnail URL if exists
-//        if let thumbnailURL = content.thumbnailURL {
-//            data["thumbnailURL"] = thumbnailURL
-//        }
-//        
-//        try await db.collection("radioFlow").addDocument(data: data)
-//        
-//        await MainActor.run {
-//            self.uploadStatus = "Upload successful! 🎉"
-//            // Reset form
-//            self.title = ""
-//            self.youtubeURL = ""
-//            self.mediaURL = nil
-//            self.selectedPhotoItem = nil
-//            self.thumbnailImage = nil
-//            self.isUploading = false
-//            self.uploadProgress = 0.0
-//        }
-//        
-//        // Update radio state
-//        try? await db.collection("radioState").document("current").updateData([
-//            "lastUpdated": FieldValue.serverTimestamp()
-//        ])
-//        
-//    } catch {
-//        await MainActor.run {
-//            self.uploadStatus = "Save failed: \(error.localizedDescription)"
-//            self.isUploading = false
-//        }
-//    }
-//}

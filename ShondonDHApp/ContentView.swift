@@ -11,7 +11,7 @@ import FirebaseFirestore
 import Combine
 
 struct ContentView: View {
-    @StateObject private var authManager = AuthenticationManager()
+    @EnvironmentObject var authManager: AuthenticationManager
     
     var body: some View {
         Group {
@@ -32,7 +32,7 @@ struct ContentView: View {
                             }
                             
                             NavigationLink(destination: RadioFlowView()) {
-                                Label("Radio Flow", systemImage: "book")
+                                Label("Radio Flow", systemImage: "music.note.list")
                             }
                         }
                         
@@ -46,11 +46,18 @@ struct ContentView: View {
                             }
                         }
                         
-                        Section("Quick Actions") {
-                            NavigationLink(destination: QuickTickerMessageView()) {
-                                Label("Quick Ticker Message", systemImage: "text.bubble")
+                        Section("Ticker Messages") {
+                            NavigationLink(destination: TickerManagementView()) {
+                                Label("Manage Ticker Messages", systemImage: "text.bubble.rtl")
+                                    .badge(Text("New"))
                             }
                             
+                            NavigationLink(destination: QuickTickerMessageView()) {
+                                Label("Quick Message", systemImage: "text.bubble")
+                            }
+                        }
+                        
+                        Section("Status") {
                             NavigationLink(destination: RadioStatusView()) {
                                 Label("Radio Status", systemImage: "antenna.radiowaves.left.and.right")
                             }
@@ -87,7 +94,6 @@ struct ContentView: View {
         }
     }
 }
-
 // MARK: - Quick Ticker Message View (Simple Version)
 struct QuickTickerMessageView: View {
     @State private var message = ""
