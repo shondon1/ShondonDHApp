@@ -83,18 +83,38 @@ struct RadioFlowView: View {
     func move(from source: IndexSet, to destination: Int) {
         var revised = blocks
         revised.move(fromOffsets: source, toOffset: destination)
-
-        // Update local array
         blocks = revised
 
-        // Batch update Firestore orders
+        // Calculate total loop duration (default 3 minutes per block if individual durations are not available)
+        let totalDuration: Double = Double(blocks.count) * 180
+
+        // Update Firestore with new order AND reset loop
         let db = Firestore.firestore()
+
+        // Batch update
+        let batch = db.batch()
+
+        // Update track orders
         for (index, block) in blocks.enumerated() {
             if let id = block.id {
-                db.collection("radioFlow").document(id)
-                    .updateData(["order": index])
+                let ref = db.collection("radioFlow").document(id)
+                batch.updateData(["order": index], forDocument: ref)
             }
         }
+
+        // Reset the playhead for new loop
+        let playheadRef = db.collection("radioPlayhead").document("current")
+        batch.setData([
+            "loopStartTime": Date().timeIntervalSince1970 * 1000,
+            "totalLoopDuration": totalDuration,
+            "currentIndex": 0,
+            "currentPosition": 0,
+            "playlistVersion": FieldValue.increment(Int64(1)),
+            "lastUpdated": FieldValue.serverTimestamp()
+        ], forDocument: playheadRef, merge: true)
+
+        // Commit
+        batch.commit()
     }
 
     func delete(at offsets: IndexSet) {

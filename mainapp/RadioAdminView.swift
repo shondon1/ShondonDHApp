@@ -276,7 +276,7 @@ struct RadioAdminView: View {
     
     private func listenToRadioState() {
         let db = Firestore.firestore()
-        listener = db.collection("radioState").document("master")
+        listener = db.collection("radioState").document("current")
             .addSnapshotListener { snapshot, error in
                 if let error = error {
                     print("Error listening to radio state: \(error.localizedDescription)")
@@ -284,15 +284,15 @@ struct RadioAdminView: View {
                 }
                 
                 guard let data = snapshot?.data() else {
-                    print("No data in radioState/master")
+                    print("No data in radioState/current")
                     return
                 }
                 
                 DispatchQueue.main.async {
                     // Update current track info
-                    currentTrackUrl = data["currentTrackUrl"] as? String ?? ""
-                    currentTrackTitle = data["trackTitle"] as? String ?? "No track playing"
-                    currentTrackDuration = data["trackDuration"] as? Int ?? 0
+                    currentTrackUrl = data["url"] as? String ?? ""
+                    currentTrackTitle = data["title"] as? String ?? "No track playing"
+                    currentTrackDuration = data["duration"] as? Int ?? 0
                     
                     // Get start timestamp
                     if let timestamp = data["startTimestamp"] as? Timestamp {
@@ -349,13 +349,17 @@ struct RadioAdminView: View {
         
         let db = Firestore.firestore()
         let radioData: [String: Any] = [
-            "currentTrackUrl": track.url,
+            "type": "audio",
+            "url": track.url,
+            "title": track.title,
+            "isPlaying": true,
+            "thumbnail": "",
+            "duration": track.duration,
             "startTimestamp": FieldValue.serverTimestamp(),
-            "trackDuration": track.duration,
-            "trackTitle": track.title
+            "updatedAt": FieldValue.serverTimestamp()
         ]
-        
-        db.collection("radioState").document("master").setData(radioData, merge: true) { error in
+
+        db.collection("radioState").document("current").setData(radioData, merge: true) { error in
             DispatchQueue.main.async {
                 isUpdating = false
                 
