@@ -594,9 +594,31 @@ struct UploadView: View {
         
         return downloadURL.absoluteString
     }
+
+    private func getMediaDuration(from url: URL) async -> Double? {
+        let asset = AVAsset(url: url)
+
+        do {
+            let duration = try await asset.load(.duration)
+            let seconds = CMTimeGetSeconds(duration)
+            return seconds.isFinite ? seconds : nil
+        } catch {
+            print("Failed to get duration: \(error)")
+            return nil
+        }
+    }
+
     //MARK: - Save to Firestore function
     func saveToFirestore(content: RadioContent) async {
         let db = Firestore.firestore()
+
+        var duration: Double = 180  // Default 3 minutes
+        if let mediaURL = mediaURL {
+            if let detectedDuration = await getMediaDuration(from: mediaURL) {
+                duration = detectedDuration
+            }
+        }
+
         do {
             // 1️⃣ Find current max order
             let snapshot = try await db.collection("radioFlow")
@@ -605,13 +627,14 @@ struct UploadView: View {
                 .getDocuments()
             let maxOrder = snapshot.documents.first?
                 .data()["order"] as? Int ?? -1
-            
+
             // 2️⃣ Build your data including new order
             var data: [String: Any] = [
                 "type":        content.type,
                 "url":         content.url,
                 "title":       content.title,
                 "isPlaying":   content.isPlaying,
+                "duration":    duration,
                 "order":       maxOrder + 1,           // next slot
                 "createdAt":   FieldValue.serverTimestamp()
             ]
