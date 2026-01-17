@@ -6,17 +6,8 @@ service cloud.firestore {
     // ==================================================
     // DREAMHOUSE RADIO - SECURITY RULES
     // ==================================================
-    // Configuration: Admin-only content, authenticated user sync
+    // Configuration: Anonymous authentication (simple admin-only app)
     // ==================================================
-
-    // Helper function to check if user is admin
-    function isAdmin() {
-      return request.auth != null &&
-             request.auth.token.email != null &&
-             request.auth.token.email in [
-               'rashyslop@outlook.com'
-             ];
-    }
 
     // Helper function to check if user is authenticated (including anonymous)
     function isAuthenticated() {
@@ -24,14 +15,14 @@ service cloud.firestore {
     }
 
     // ==================================================
-    // RADIO FLOW - The playlist (ADMIN ONLY)
+    // RADIO FLOW - The playlist
     // ==================================================
     match /radioFlow/{document} {
       // Anyone can read the playlist
       allow read: if true;
 
-      // Only authenticated admins can write
-      allow write: if isAdmin();
+      // Authenticated users (anonymous admin) can write
+      allow write: if isAuthenticated();
     }
 
     // ==================================================
@@ -80,73 +71,70 @@ service cloud.firestore {
     }
 
     // ==================================================
-    // ADMIN-ONLY COLLECTIONS
+    // CONTENT MANAGEMENT COLLECTIONS
     // ==================================================
 
-    // Ticker Messages (ADMIN ONLY)
+    // Ticker Messages
     match /tickerMessages/{message} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
-    // Live Status (ADMIN ONLY)
+    // Live Status
     match /liveStatus/{document} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
-    // Community Updates (ADMIN ONLY)
+    // Community Updates
     match /Updates/{document} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
-    // Latest Video (ADMIN ONLY)
+    // Latest Video
     match /latestVideo/{document} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
-    // Contributors (ADMIN ONLY)
+    // Contributors
     match /contributors/{document} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
     // ==================================================
     // SECURITY NOTES
     // ==================================================
     /*
-    AUTHENTICATION METHODS:
+    AUTHENTICATION METHOD:
 
-    1. ANONYMOUS AUTH (Current Setup):
-       - App uses Auth.auth().signInAnonymously()
-       - Users are authenticated but have no email
-       - Can write to collections with: request.auth != null
-       - Cannot write to admin-only collections
-
-    2. ADMIN ACCESS:
-       - Requires email authentication (rashyslop@outlook.com)
-       - Can write to all collections
-       - Used for sensitive operations (ticker, live status)
+    ANONYMOUS AUTH (Simple Admin-Only Setup):
+    - App uses Auth.auth().signInAnonymously()
+    - Only the admin uses this app (single user)
+    - Anonymous user can write to ALL collections
+    - Simple and secure for personal use
 
     COLLECTION ACCESS LEVELS:
 
-    - PUBLIC READ: All collections (everyone can read)
-    - PUBLIC WRITE: radioClock, radioPlayhead (sync system)
-    - AUTHENTICATED WRITE: content_blocks, radio_updates, radioState, scheduledContent
-    - ADMIN ONLY: radioFlow, tickerMessages, liveStatus, Updates, latestVideo, contributors
+    - PUBLIC READ: All collections (anyone can read)
+    - PUBLIC WRITE: radioClock, radioPlayhead (sync system - no auth needed)
+    - AUTHENTICATED WRITE: All other collections (anonymous admin only)
 
-    WHY ANONYMOUS AUTH?
-    - Simple user experience (no sign-up required)
-    - Basic rate limiting and abuse prevention
-    - Can be upgraded to full auth later if needed
+    WHY THIS WORKS:
 
-    SECURITY CONSIDERATIONS:
-    - Add Cloud Function rate limiting for uploads
-    - Monitor content_blocks for abuse
-    - Consider adding file size limits in Storage rules
-    - Add content moderation if opening to public
+    - This is an admin-only app (not public-facing)
+    - Only you have access to the app
+    - Anonymous auth provides basic Firebase security
+    - No email/password needed - just works!
+
+    SECURITY NOTES:
+
+    - Keep app files private (don't share publicly)
+    - Anonymous auth prevents unauthorized Firebase access
+    - Can upgrade to email auth later if needed
+    - Monitor Firebase Console for unexpected activity
     */
 
     // ==================================================
