@@ -1,0 +1,189 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==================================================
+    // DREAMHOUSE RADIO - SECURITY RULES
+    // ==================================================
+    // Configuration: Admin-only content, authenticated user sync
+    // ==================================================
+
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null &&
+             request.auth.token.email != null &&
+             request.auth.token.email in [
+               'rashyslop@outlook.com'
+             ];
+    }
+
+    // Helper function to check if user is authenticated (including anonymous)
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // ==================================================
+    // RADIO FLOW - The playlist (ADMIN ONLY)
+    // ==================================================
+    match /radioFlow/{document} {
+      // Anyone can read the playlist
+      allow read: if true;
+
+      // Only authenticated admins can write
+      allow write: if isAdmin();
+    }
+
+    // ==================================================
+    // RADIO SYNCHRONIZATION - Public sync system
+    // ==================================================
+
+    // Radio Clock - Synchronization (PUBLIC WRITE)
+    // All users need to write here for sync to work
+    match /radioClock/master {
+      allow read: if true;
+      allow write: if true;  // ✅ All users can sync
+    }
+
+    // Radio Playhead - Legacy sync system (PUBLIC WRITE)
+    match /radioPlayhead/{document=**} {
+      allow read: if true;
+      allow write: if true;  // ✅ All users can sync
+    }
+
+    // Radio State - Current playing state (AUTHENTICATED WRITE)
+    match /radioState/{document} {
+      allow read: if true;
+      allow write: if isAuthenticated();  // ✅ Anonymous users can update
+    }
+
+    // ==================================================
+    // CONTENT MANAGEMENT - Admin/Authenticated access
+    // ==================================================
+
+    // Content Blocks - Audio/video metadata (AUTHENTICATED WRITE)
+    match /content_blocks/{document} {
+      allow read: if true;
+      allow write: if isAuthenticated();  // ✅ Anonymous users can upload
+    }
+
+    // Radio Updates - Triggers playlist refresh (AUTHENTICATED WRITE)
+    match /radio_updates/{document} {
+      allow read: if true;
+      allow write: if isAuthenticated();  // ✅ Anonymous users can trigger updates
+    }
+
+    // Scheduled Content - Programming schedule (AUTHENTICATED WRITE)
+    match /scheduledContent/{document} {
+      allow read: if true;
+      allow write: if isAuthenticated();  // ✅ Anonymous users can schedule
+    }
+
+    // ==================================================
+    // ADMIN-ONLY COLLECTIONS
+    // ==================================================
+
+    // Ticker Messages (ADMIN ONLY)
+    match /tickerMessages/{message} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Live Status (ADMIN ONLY)
+    match /liveStatus/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Community Updates (ADMIN ONLY)
+    match /Updates/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Latest Video (ADMIN ONLY)
+    match /latestVideo/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Contributors (ADMIN ONLY)
+    match /contributors/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ==================================================
+    // SECURITY NOTES
+    // ==================================================
+    /*
+    AUTHENTICATION METHODS:
+
+    1. ANONYMOUS AUTH (Current Setup):
+       - App uses Auth.auth().signInAnonymously()
+       - Users are authenticated but have no email
+       - Can write to collections with: request.auth != null
+       - Cannot write to admin-only collections
+
+    2. ADMIN ACCESS:
+       - Requires email authentication (rashyslop@outlook.com)
+       - Can write to all collections
+       - Used for sensitive operations (ticker, live status)
+
+    COLLECTION ACCESS LEVELS:
+
+    - PUBLIC READ: All collections (everyone can read)
+    - PUBLIC WRITE: radioClock, radioPlayhead (sync system)
+    - AUTHENTICATED WRITE: content_blocks, radio_updates, radioState, scheduledContent
+    - ADMIN ONLY: radioFlow, tickerMessages, liveStatus, Updates, latestVideo, contributors
+
+    WHY ANONYMOUS AUTH?
+    - Simple user experience (no sign-up required)
+    - Basic rate limiting and abuse prevention
+    - Can be upgraded to full auth later if needed
+
+    SECURITY CONSIDERATIONS:
+    - Add Cloud Function rate limiting for uploads
+    - Monitor content_blocks for abuse
+    - Consider adding file size limits in Storage rules
+    - Add content moderation if opening to public
+    */
+
+    // ==================================================
+    // FIREBASE STORAGE RULES
+    // ==================================================
+    /*
+    Don't forget to update your Storage rules too!
+
+    In firebase console -> Storage -> Rules:
+
+    rules_version = '2';
+    service firebase.storage {
+      match /b/{bucket}/o {
+        // Audio uploads (authenticated users)
+        match /audio/{fileName} {
+          allow read: if true;
+          allow write: if request.auth != null &&
+                          request.resource.size < 100 * 1024 * 1024 &&  // 100MB limit
+                          request.resource.contentType.matches('audio/.*');
+        }
+
+        // Video uploads (authenticated users)
+        match /video/{fileName} {
+          allow read: if true;
+          allow write: if request.auth != null &&
+                          request.resource.size < 500 * 1024 * 1024 &&  // 500MB limit
+                          request.resource.contentType.matches('video/.*');
+        }
+
+        // Radio media (authenticated users)
+        match /radio_media/{type}/{fileName} {
+          allow read: if true;
+          allow write: if request.auth != null &&
+                          request.resource.size < 100 * 1024 * 1024;  // 100MB limit
+        }
+      }
+    }
+    */
+  }
+}

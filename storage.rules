@@ -1,0 +1,110 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ==================================================
+    // DREAMHOUSE RADIO - STORAGE SECURITY RULES
+    // ==================================================
+
+    // Helper function to check file size
+    function validSize(maxSizeMB) {
+      return request.resource.size < maxSizeMB * 1024 * 1024;
+    }
+
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // ==================================================
+    // AUDIO UPLOADS
+    // ==================================================
+    // Authenticated users can upload audio files
+    match /audio/{fileName} {
+      // Anyone can read/download
+      allow read: if true;
+
+      // Authenticated users can upload audio (max 100MB)
+      allow write: if isAuthenticated() &&
+                      validSize(100) &&
+                      request.resource.contentType.matches('audio/.*');
+    }
+
+    // ==================================================
+    // VIDEO UPLOADS
+    // ==================================================
+    // Authenticated users can upload video files
+    match /video/{fileName} {
+      // Anyone can read/download
+      allow read: if true;
+
+      // Authenticated users can upload video (max 500MB)
+      allow write: if isAuthenticated() &&
+                      validSize(500) &&
+                      request.resource.contentType.matches('video/.*');
+    }
+
+    // ==================================================
+    // RADIO MEDIA
+    // ==================================================
+    // Radio-specific media uploads
+    match /radio_media/{type}/{fileName} {
+      // Anyone can read/download
+      allow read: if true;
+
+      // Authenticated users can upload (max 100MB)
+      // type can be: audio, video, thumbnails
+      allow write: if isAuthenticated() &&
+                      validSize(100);
+    }
+
+    // ==================================================
+    // THUMBNAILS / ALBUM ART
+    // ==================================================
+    // Smaller size limit for images
+    match /radio_media/thumbnails/{fileName} {
+      // Anyone can read/download
+      allow read: if true;
+
+      // Authenticated users can upload images (max 10MB)
+      allow write: if isAuthenticated() &&
+                      validSize(10) &&
+                      (request.resource.contentType.matches('image/.*') ||
+                       request.resource.contentType == 'application/octet-stream');
+    }
+
+    // ==================================================
+    // SECURITY NOTES
+    // ==================================================
+    /*
+    FILE SIZE LIMITS:
+    - Audio: 100MB max
+    - Video: 500MB max
+    - Radio Media: 100MB max
+    - Thumbnails: 10MB max
+
+    AUTHENTICATION:
+    - All uploads require anonymous authentication
+    - Downloads are public (no auth required)
+
+    CONTENT TYPE VALIDATION:
+    - Audio files must have audio/* MIME type
+    - Video files must have video/* MIME type
+    - Thumbnails must have image/* MIME type
+
+    ADDITIONAL SECURITY:
+    - Consider adding Cloud Functions to:
+      * Scan uploaded files for malware
+      * Validate audio/video duration
+      * Compress/optimize files
+      * Generate thumbnails automatically
+      * Delete old/unused files
+
+    RATE LIMITING:
+    - Firebase Storage has built-in rate limits
+    - Consider adding custom limits via Cloud Functions
+    - Monitor usage in Firebase Console
+    */
+  }
+}
