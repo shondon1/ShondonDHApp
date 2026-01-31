@@ -57,6 +57,12 @@ struct ContentView: View {
                             }
                         }
                         
+                        Section("User Updates") {
+                            NavigationLink(destination: UpdateMessagesView()) {
+                                Label("Update Messages", systemImage: "doc.text.fill")
+                            }
+                        }
+
                         Section("Status") {
                             NavigationLink(destination: RadioStatusView()) {
                                 Label("Radio Status", systemImage: "antenna.radiowaves.left.and.right")
