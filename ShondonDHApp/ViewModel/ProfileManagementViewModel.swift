@@ -52,16 +52,8 @@ class ProfileManagementViewModel: ObservableObject {
                 self.isLoading = false
 
                 if let error = error {
-                    let errorCode = (error as NSError).code
-                    print("🔴 Error loading profiles: \(error.localizedDescription)")
-                    print("🔴 Error code: \(errorCode)")
-
-                    // More helpful error message
-                    if error.localizedDescription.contains("permission") {
-                        self.showError("Permission Denied", message: "Check that Firebase rules are published and include the 'profiles' collection. Also verify you're signed in.")
-                    } else {
-                        self.showError("Failed to load profiles", message: error.localizedDescription)
-                    }
+                    print("Error loading profiles: \(error.localizedDescription)")
+                    self.showError("Failed to load profiles", message: error.localizedDescription)
                     return
                 }
 

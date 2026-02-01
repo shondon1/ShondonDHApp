@@ -6,14 +6,10 @@
 //
 
 import SwiftUI
-import FirebaseAuth
 
 struct ProfileListView: View {
     // MARK: - ViewModel
     @StateObject private var viewModel = ProfileManagementViewModel()
-
-    // MARK: - Auth State
-    @State private var authStatus = "Checking..."
 
     // MARK: - UI State
     @State private var showingAddSheet = false
@@ -82,27 +78,8 @@ struct ProfileListView: View {
             Text("Loading profiles...")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
-
-            // Debug: Show auth status
-            Text(authStatus)
-                .font(.caption)
-                .foregroundColor(.orange)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            checkAuthStatus()
-        }
-    }
-
-    // MARK: - Check Auth Status
-    private func checkAuthStatus() {
-        if let user = Auth.auth().currentUser {
-            authStatus = "✅ Signed in: \(user.uid.prefix(8))..."
-            print("🟢 Auth: Signed in as \(user.uid)")
-        } else {
-            authStatus = "❌ Not signed in"
-            print("🔴 Auth: Not signed in!")
-        }
     }
 
     // MARK: - Empty State View
