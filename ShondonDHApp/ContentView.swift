@@ -63,6 +63,12 @@ struct ContentView: View {
                             }
                         }
 
+                        Section("Community") {
+                            NavigationLink(destination: ProfileListView()) {
+                                Label("Profile Management", systemImage: "person.crop.rectangle.stack")
+                            }
+                        }
+
                         Section("Status") {
                             NavigationLink(destination: RadioStatusView()) {
                                 Label("Radio Status", systemImage: "antenna.radiowaves.left.and.right")
