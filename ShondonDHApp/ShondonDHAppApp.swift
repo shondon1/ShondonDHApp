@@ -41,10 +41,6 @@ struct ShondonDHAppApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(authManager)
-                .onAppear {
-                    // Sign in anonymously when app launches
-                    authManager.signInAnonymously()
-                }
         }
     }
 }

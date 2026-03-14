@@ -12,51 +12,51 @@ import Combine
 
 struct ContentView: View {
     @EnvironmentObject var authManager: AuthenticationManager
-    
+
     var body: some View {
         Group {
             if authManager.isLoading {
-                // Loading view while authenticating
-                VStack {
+                // Loading while checking persisted auth session
+                VStack(spacing: 16) {
                     ProgressView()
-                    Text("Authenticating...")
-                        .padding(.top)
+                    Text("Loading...")
+                        .foregroundColor(.secondary)
                 }
             } else if authManager.isAuthenticated {
-                // Working content with existing views
+                // Main admin interface
                 NavigationView {
                     List {
                         Section("Content Management") {
                             NavigationLink(destination: UploadView()) {
                                 Label("Upload New Content", systemImage: "square.and.arrow.up")
                             }
-                            
+
                             NavigationLink(destination: RadioFlowView()) {
                                 Label("Radio Flow", systemImage: "music.note.list")
                             }
                         }
-                        
+
                         Section("Radio Control") {
                             NavigationLink(destination: RadioAdminView()) {
                                 Label("Radio Admin", systemImage: "radio")
                             }
-                            
+
                             NavigationLink(destination: ScheduleView()) {
                                 Label("Schedule Management", systemImage: "calendar")
                             }
                         }
-                        
+
                         Section("Ticker Messages") {
                             NavigationLink(destination: TickerManagementView()) {
                                 Label("Manage Ticker Messages", systemImage: "text.bubble.rtl")
                                     .badge(Text("New"))
                             }
-                            
+
                             NavigationLink(destination: QuickTickerMessageView()) {
                                 Label("Quick Message", systemImage: "text.bubble")
                             }
                         }
-                        
+
                         Section("User Updates") {
                             NavigationLink(destination: UpdateMessagesView()) {
                                 Label("Update Messages", systemImage: "doc.text.fill")
@@ -76,34 +76,135 @@ struct ContentView: View {
                         }
                     }
                     .navigationTitle("DreamHouse Studio")
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(action: { authManager.signOut() }) {
+                                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                                    .foregroundColor(.red)
+                            }
+                        }
+                    }
                 }
             } else {
-                // Error view
-                VStack(spacing: 20) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 50))
-                        .foregroundColor(.orange)
-                    
-                    Text("Authentication Failed")
-                        .font(.title2)
-                    
-                    Text(authManager.errorMessage)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                    
-                    Button("Retry") {
-                        authManager.signInAnonymously()
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-                .padding()
+                // Login screen
+                LoginView()
             }
         }
-        .onAppear {
-            // Automatically sign in when app launches
-            authManager.signInAnonymously()
+    }
+}
+
+// MARK: - Login View
+struct LoginView: View {
+    @EnvironmentObject var authManager: AuthenticationManager
+    @State private var password = ""
+    @FocusState private var isPasswordFocused: Bool
+
+    private let adminEmail = "rashon_hyslop@outlook.com"
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            // Header
+            VStack(spacing: 12) {
+                Image(systemName: "radio.fill")
+                    .font(.system(size: 60))
+                    .foregroundColor(.blue)
+                Text("DreamHouse Studio")
+                    .font(.largeTitle)
+                    .bold()
+                Text("Admin Panel")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.bottom, 48)
+
+            // Form
+            VStack(spacing: 16) {
+                // Email (read-only)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Email")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    HStack {
+                        Image(systemName: "envelope.fill")
+                            .foregroundColor(.gray)
+                        Text(adminEmail)
+                            .foregroundColor(.primary)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(10)
+                }
+
+                // Password
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Password")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    HStack {
+                        Image(systemName: "lock.fill")
+                            .foregroundColor(.gray)
+                        SecureField("Enter your password", text: $password)
+                            .focused($isPasswordFocused)
+                            .submitLabel(.go)
+                            .onSubmit { attemptSignIn() }
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(10)
+                }
+
+                // Error message
+                if !authManager.errorMessage.isEmpty {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.red)
+                        Text(authManager.errorMessage)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                // Sign In button
+                Button(action: attemptSignIn) {
+                    HStack {
+                        if authManager.isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "arrow.right.circle.fill")
+                        }
+                        Text(authManager.isLoading ? "Signing in..." : "Sign In")
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(password.isEmpty || authManager.isLoading ? Color.gray : Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                .disabled(password.isEmpty || authManager.isLoading)
+            }
+            .padding(.horizontal, 32)
+
+            Spacer()
+
+            Text("DreamHouse Radio Admin")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .padding(.bottom, 20)
         }
+    }
+
+    private func attemptSignIn() {
+        guard !password.isEmpty else { return }
+        isPasswordFocused = false
+        authManager.signIn(email: adminEmail, password: password)
     }
 }
 // MARK: - Quick Ticker Message View (Simple Version)
@@ -246,7 +347,7 @@ struct QuickTickerMessageView: View {
             }
         } catch {
             await MainActor.run {
-                alertMessage = "Failed to add message: \(error.localizedDescription)"
+                alertMessage = "Failed to add message: \(firestoreErrorMessage(error))"
                 showingAlert = true
                 isAdding = false
             }
@@ -394,41 +495,89 @@ struct StatusRow: View {
     }
 }
 
-// Authentication Manager
+// MARK: - Authentication Manager
 class AuthenticationManager: ObservableObject {
     @Published var isAuthenticated = false
     @Published var isLoading = true
     @Published var errorMessage = ""
-    
+
+    private var authStateHandle: AuthStateDidChangeListenerHandle?
+
     init() {
-        // Check if already signed in
-        if let user = Auth.auth().currentUser {
-            print("Already signed in with UID: \(user.uid)")
-            self.isAuthenticated = true
-            self.isLoading = false
-        }
-    }
-    
-    func signInAnonymously() {
-        isLoading = true
-        errorMessage = ""
-        
-        Auth.auth().signInAnonymously { [weak self] authResult, error in
+        // Listen for persisted auth state — fires immediately with current user (or nil)
+        authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             DispatchQueue.main.async {
-                if let error = error {
-                    print("Anonymous auth failed: \(error.localizedDescription)")
-                    self?.errorMessage = error.localizedDescription
-                    self?.isAuthenticated = false
-                } else if let user = authResult?.user {
-                    print("Signed in anonymously with UID: \(user.uid)")
-                    self?.isAuthenticated = true
-                }
+                self?.isAuthenticated = user != nil
                 self?.isLoading = false
             }
         }
     }
+
+    deinit {
+        if let handle = authStateHandle {
+            Auth.auth().removeStateDidChangeListener(handle)
+        }
+    }
+
+    func signIn(email: String, password: String) {
+        isLoading = true
+        errorMessage = ""
+
+        Auth.auth().signIn(withEmail: email, password: password) { [weak self] _, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    self?.errorMessage = self?.friendlyError(error) ?? error.localizedDescription
+                    self?.isAuthenticated = false
+                }
+                // isAuthenticated is set by the auth state listener
+                self?.isLoading = false
+            }
+        }
+    }
+
+    func signOut() {
+        do {
+            try Auth.auth().signOut()
+            // isAuthenticated will be set to false by the auth state listener
+        } catch {
+            errorMessage = "Sign out failed: \(error.localizedDescription)"
+        }
+    }
+
+    private func friendlyError(_ error: Error) -> String {
+        let nsError = error as NSError
+        guard let code = AuthErrorCode(rawValue: nsError.code) else {
+            return error.localizedDescription
+        }
+        switch code {
+        case .wrongPassword, .invalidCredential:
+            return "Incorrect password. Please try again."
+        case .invalidEmail:
+            return "Please enter a valid email address."
+        case .userNotFound:
+            return "No account found with this email."
+        case .networkError:
+            return "Network error. Please check your connection and try again."
+        case .tooManyRequests:
+            return "Too many failed attempts. Please wait a moment and try again."
+        default:
+            return error.localizedDescription
+        }
+    }
+}
+
+// MARK: - Firestore Error Helper
+/// Returns a user-friendly message for Firestore errors, especially permission denials.
+func firestoreErrorMessage(_ error: Error) -> String {
+    let nsError = error as NSError
+    // Firestore error code 7 = PERMISSION_DENIED
+    if nsError.domain == "FIRFirestoreErrorDomain" && nsError.code == 7 {
+        return "Permission denied. Please ensure you are signed in as the admin account."
+    }
+    return error.localizedDescription
 }
 
 #Preview {
     ContentView()
+        .environmentObject(AuthenticationManager())
 }
