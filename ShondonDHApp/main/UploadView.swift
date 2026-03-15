@@ -41,7 +41,8 @@ struct UploadView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var showingImagePicker = false
     @State private var showingThumbnailPicker = false
-    
+    @State private var notifyListeners = false
+
     let mediaTypes = ["Audio", "Video", "YouTube"]
     
     var body: some View {
@@ -126,6 +127,13 @@ struct UploadView: View {
                     }
                 }
                 
+                // Notify listeners toggle
+                Toggle(isOn: $notifyListeners) {
+                    Label("Notify Listeners", systemImage: "bell.badge")
+                }
+                .padding(.horizontal)
+                .tint(.blue)
+
                 // Upload Button
                 Button(action: {
                     Task {
@@ -642,10 +650,22 @@ struct UploadView: View {
             }
             
             // 3️⃣ Save it
-            try await db.collection("radioFlow").addDocument(data: data)
-            
+            let ref = try await db.collection("radioFlow").addDocument(data: data)
+
+            // 4️⃣ Optionally notify listeners (passive = silent banner, won't interrupt)
+            if notifyListeners {
+                try? await PushNotificationService.shared.queue(
+                    title: "New on DreamHouse Radio",
+                    body: content.title.isEmpty ? "Fresh content just dropped." : "\"\(content.title)\" is now in the rotation.",
+                    category: "content",
+                    interruptionLevel: .passive,
+                    sourceType: "auto_upload",
+                    sourceId: ref.documentID
+                )
+            }
+
             await MainActor.run {
-                uploadStatus = "Upload successful! 🎉"
+                uploadStatus = notifyListeners ? "Upload successful! Listeners notified." : "Upload successful!"
                 // reset your form state…
                 self.title = ""
                 self.youtubeURL = ""
@@ -656,7 +676,7 @@ struct UploadView: View {
                 self.uploadProgress = 0.0
             }
             
-            // 4️⃣ Optionally bump your radioState timestamp
+            // 5️⃣ Optionally bump your radioState timestamp
             try? await db.collection("radioState")
                 .document("current")
                 .updateData(["lastUpdated": FieldValue.serverTimestamp()])

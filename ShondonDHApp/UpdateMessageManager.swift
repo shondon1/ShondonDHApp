@@ -234,6 +234,10 @@ struct AddUpdateMessageView: View {
     @State private var showingAlert = false
     @State private var alertMessage = ""
 
+    // Notification options
+    @State private var sendPushNotification = false
+    @State private var notificationInterruption: NotificationInterruptionLevel = .active
+
     @Environment(\.dismiss) private var dismiss
 
     let types = [
@@ -301,8 +305,41 @@ struct AddUpdateMessageView: View {
                     Toggle("Active Immediately", isOn: $isActive)
                 }
 
+                // Push Notification
+                Section {
+                    Toggle(isOn: $sendPushNotification) {
+                        Label("Send Push Notification", systemImage: "bell.badge")
+                    }
+
+                    if sendPushNotification {
+                        InterruptionLevelPicker(selection: $notificationInterruption)
+                            .padding(.vertical, 4)
+                    }
+                } header: {
+                    Text("Push Notification")
+                } footer: {
+                    if sendPushNotification {
+                        Text("Listeners who have notifications enabled will receive this on their device.")
+                    } else {
+                        Text("This update will only appear inside the app. Enable the toggle to also push it to listeners' devices.")
+                    }
+                }
+
+                // Notification Preview (only when push is on)
+                if sendPushNotification {
+                    Section("Notification Preview") {
+                        NotificationPreviewCard(
+                            title: title.isEmpty ? "Your title here..." : title,
+                            body: message.isEmpty ? "Your message will appear here." : message,
+                            interruptionLevel: notificationInterruption
+                        )
+                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                        .listRowBackground(Color.clear)
+                    }
+                }
+
                 // Preview
-                Section("Preview") {
+                Section("In-App Preview") {
                     VStack(alignment: .leading, spacing: 12) {
                         // Type Badge
                         HStack {
@@ -352,8 +389,10 @@ struct AddUpdateMessageView: View {
                     .disabled(!isValid() || isSaving)
                 }
             }
-            .alert("Update Saved", isPresented: $showingAlert) {
-                Button("OK") { dismiss() }
+            .alert(alertMessage.hasPrefix("Error") ? "Error" : "Saved", isPresented: $showingAlert) {
+                Button("OK") {
+                    if !alertMessage.hasPrefix("Error") { dismiss() }
+                }
             } message: {
                 Text(alertMessage)
             }
@@ -403,16 +442,29 @@ struct AddUpdateMessageView: View {
         }
 
         do {
-            try await db.collection("updateMessages").addDocument(data: data)
+            let ref = try await db.collection("updateMessages").addDocument(data: data)
 
+            // Optionally queue a push notification
+            if sendPushNotification {
+                try await PushNotificationService.shared.queue(
+                    title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+                    body: message.trimmingCharacters(in: .whitespacesAndNewlines),
+                    category: type,
+                    interruptionLevel: notificationInterruption,
+                    sourceType: "manual",
+                    sourceId: ref.documentID
+                )
+            }
+
+            let pushed = sendPushNotification ? " Notification queued for listeners." : ""
             await MainActor.run {
-                alertMessage = "Update message added successfully!"
+                alertMessage = "Update message saved.\(pushed)"
                 showingAlert = true
                 isSaving = false
             }
         } catch {
             await MainActor.run {
-                alertMessage = "Error: \(error.localizedDescription)"
+                alertMessage = "Error: \(firestoreErrorMessage(error))"
                 showingAlert = true
                 isSaving = false
             }

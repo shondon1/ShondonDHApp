@@ -69,6 +69,12 @@ struct ContentView: View {
                             }
                         }
 
+                        Section("Notifications") {
+                            NavigationLink(destination: PushNotificationsView()) {
+                                Label("Push Notifications", systemImage: "bell.badge")
+                            }
+                        }
+
                         Section("Status") {
                             NavigationLink(destination: RadioStatusView()) {
                                 Label("Radio Status", systemImage: "antenna.radiowaves.left.and.right")
