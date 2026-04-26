@@ -213,10 +213,7 @@ struct UploadView: View {
             )
         }
         .onAppear {
-            // Sign in anonymously if not already signed in
-            if Auth.auth().currentUser == nil {
-                signInAnonymously()
-            }
+            // Auth is guaranteed by ContentView before this screen is reachable
         }
     }
     
@@ -426,16 +423,6 @@ struct UploadView: View {
         return "Unknown size"
     }
     
-    private func signInAnonymously() {
-        Auth.auth().signInAnonymously { result, error in
-            if let error = error {
-                uploadStatus = "Authentication failed: \(error.localizedDescription)"
-            } else {
-                print("Signed in anonymously with uid: \(result?.user.uid ?? "unknown")")
-            }
-        }
-    }
-    
     private func isValidForUpload() -> Bool {
         if title.isEmpty { return false }
         
@@ -489,13 +476,6 @@ struct UploadView: View {
     
     // MARK: - Upload Logic
     func uploadMedia() async {
-        // Check authentication first
-        guard Auth.auth().currentUser != nil else {
-            uploadStatus = "Not authenticated. Please wait..."
-            signInAnonymously()
-            return
-        }
-        
         guard isValidForUpload() else {
             uploadStatus = "Please fill in all required fields."
             return
