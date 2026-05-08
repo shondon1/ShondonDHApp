@@ -41,7 +41,8 @@ struct UploadView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var showingImagePicker = false
     @State private var showingThumbnailPicker = false
-    
+    @State private var notifyListeners = false
+
     let mediaTypes = ["Audio", "Video", "YouTube"]
     
     var body: some View {
@@ -126,6 +127,13 @@ struct UploadView: View {
                     }
                 }
                 
+                // Notify listeners toggle
+                Toggle(isOn: $notifyListeners) {
+                    Label("Notify Listeners", systemImage: "bell.badge")
+                }
+                .padding(.horizontal)
+                .tint(.blue)
+
                 // Upload Button
                 Button(action: {
                     Task {
@@ -203,12 +211,6 @@ struct UploadView: View {
                     }
                 }
             )
-        }
-        .onAppear {
-            // Sign in anonymously if not already signed in
-            if Auth.auth().currentUser == nil {
-                signInAnonymously()
-            }
         }
     }
     
@@ -418,14 +420,19 @@ struct UploadView: View {
         return "Unknown size"
     }
     
-    private func signInAnonymously() {
-        Auth.auth().signInAnonymously { result, error in
-            if let error = error {
-                uploadStatus = "Authentication failed: \(error.localizedDescription)"
-            } else {
-                print("Signed in anonymously with uid: \(result?.user.uid ?? "unknown")")
+    /// Picks a MIME type that satisfies `storage.rules` (`audio/.*` / `video/.*`).
+    private func mimeTypeForStorage(fileURL: URL) -> String {
+        let ext = fileURL.pathExtension.lowercased()
+        if type == "Video" {
+            if let ut = UTType(filenameExtension: ext), let mime = ut.preferredMIMEType, mime.hasPrefix("video/") {
+                return mime
             }
+            return "video/mp4"
         }
+        if let ut = UTType(filenameExtension: ext), let mime = ut.preferredMIMEType, mime.hasPrefix("audio/") {
+            return mime
+        }
+        return "audio/mpeg"
     }
     
     private func isValidForUpload() -> Bool {
@@ -481,13 +488,13 @@ struct UploadView: View {
     
     // MARK: - Upload Logic
     func uploadMedia() async {
-        // Check authentication first
-        guard Auth.auth().currentUser != nil else {
-            uploadStatus = "Not authenticated. Please wait..."
-            signInAnonymously()
+        guard DreamHouseAdminAuth.isAdmin(Auth.auth().currentUser) else {
+            await MainActor.run {
+                uploadStatus = "You must be signed in with the DreamHouse admin account to upload. Use Sign Out, then sign in again."
+            }
             return
         }
-        
+
         guard isValidForUpload() else {
             uploadStatus = "Please fill in all required fields."
             return
@@ -530,9 +537,9 @@ struct UploadView: View {
         let fileName = "\(UUID().uuidString)_\(fileURL.lastPathComponent)"
         let storageRef = Storage.storage().reference().child("radio_media/\(type.lowercased())/\(fileName)")
         
-        // Create metadata
+        // Create metadata (must match storage.rules audio/* or video/*)
         let metadata = StorageMetadata()
-        metadata.contentType = type == "Video" ? "video/mp4" : "audio/mpeg"
+        metadata.contentType = mimeTypeForStorage(fileURL: fileURL)
         
         do {
             // Upload main file
@@ -642,10 +649,22 @@ struct UploadView: View {
             }
             
             // 3️⃣ Save it
-            try await db.collection("radioFlow").addDocument(data: data)
-            
+            let ref = try await db.collection("radioFlow").addDocument(data: data)
+
+            // 4️⃣ Optionally notify listeners (passive = silent banner, won't interrupt)
+            if notifyListeners {
+                try? await PushNotificationService.shared.queue(
+                    title: "New on DreamHouse Radio",
+                    body: content.title.isEmpty ? "Fresh content just dropped." : "\"\(content.title)\" is now in the rotation.",
+                    category: "content",
+                    interruptionLevel: .passive,
+                    sourceType: "auto_upload",
+                    sourceId: ref.documentID
+                )
+            }
+
             await MainActor.run {
-                uploadStatus = "Upload successful! 🎉"
+                uploadStatus = notifyListeners ? "Upload successful! Listeners notified." : "Upload successful!"
                 // reset your form state…
                 self.title = ""
                 self.youtubeURL = ""
@@ -656,14 +675,14 @@ struct UploadView: View {
                 self.uploadProgress = 0.0
             }
             
-            // 4️⃣ Optionally bump your radioState timestamp
+            // 5️⃣ Optionally bump your radioState timestamp
             try? await db.collection("radioState")
                 .document("current")
                 .updateData(["lastUpdated": FieldValue.serverTimestamp()])
             
         } catch {
             await MainActor.run {
-                uploadStatus = "Save failed: \(error.localizedDescription)"
+                uploadStatus = firestoreErrorMessage(error)
                 isUploading = false
             }
         }
