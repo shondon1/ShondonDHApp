@@ -211,7 +211,7 @@ struct InterruptionLevelPicker: View {
 
 struct NotificationPreviewCard: View {
     let title: String
-    let body: String
+    let bodyt: String
     let interruptionLevel: NotificationInterruptionLevel
 
     var body: some View {
@@ -244,9 +244,9 @@ struct NotificationPreviewCard: View {
                 .fontWeight(.semibold)
                 .foregroundColor(title.isEmpty ? .secondary : .primary)
 
-            Text(body.isEmpty ? "Notification body will appear here." : body)
+            Text(bodyt.isEmpty ? "Notification body will appear here." : bodyt)
                 .font(.subheadline)
-                .foregroundColor(body.isEmpty ? .secondary : .primary)
+                .foregroundColor(bodyt.isEmpty ? .secondary : .primary)
                 .lineLimit(3)
         }
         .padding(12)

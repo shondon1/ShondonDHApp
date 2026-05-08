@@ -212,12 +212,6 @@ struct UploadView: View {
                 }
             )
         }
-        .onAppear {
-            // Sign in anonymously if not already signed in
-            if Auth.auth().currentUser == nil {
-                signInAnonymously()
-            }
-        }
     }
     
     // MARK: - Audio Selection Section
@@ -426,14 +420,19 @@ struct UploadView: View {
         return "Unknown size"
     }
     
-    private func signInAnonymously() {
-        Auth.auth().signInAnonymously { result, error in
-            if let error = error {
-                uploadStatus = "Authentication failed: \(error.localizedDescription)"
-            } else {
-                print("Signed in anonymously with uid: \(result?.user.uid ?? "unknown")")
+    /// Picks a MIME type that satisfies `storage.rules` (`audio/.*` / `video/.*`).
+    private func mimeTypeForStorage(fileURL: URL) -> String {
+        let ext = fileURL.pathExtension.lowercased()
+        if type == "Video" {
+            if let ut = UTType(filenameExtension: ext), let mime = ut.preferredMIMEType, mime.hasPrefix("video/") {
+                return mime
             }
+            return "video/mp4"
         }
+        if let ut = UTType(filenameExtension: ext), let mime = ut.preferredMIMEType, mime.hasPrefix("audio/") {
+            return mime
+        }
+        return "audio/mpeg"
     }
     
     private func isValidForUpload() -> Bool {
@@ -489,13 +488,13 @@ struct UploadView: View {
     
     // MARK: - Upload Logic
     func uploadMedia() async {
-        // Check authentication first
-        guard Auth.auth().currentUser != nil else {
-            uploadStatus = "Not authenticated. Please wait..."
-            signInAnonymously()
+        guard DreamHouseAdminAuth.isAdmin(Auth.auth().currentUser) else {
+            await MainActor.run {
+                uploadStatus = "You must be signed in with the DreamHouse admin account to upload. Use Sign Out, then sign in again."
+            }
             return
         }
-        
+
         guard isValidForUpload() else {
             uploadStatus = "Please fill in all required fields."
             return
@@ -538,9 +537,9 @@ struct UploadView: View {
         let fileName = "\(UUID().uuidString)_\(fileURL.lastPathComponent)"
         let storageRef = Storage.storage().reference().child("radio_media/\(type.lowercased())/\(fileName)")
         
-        // Create metadata
+        // Create metadata (must match storage.rules audio/* or video/*)
         let metadata = StorageMetadata()
-        metadata.contentType = type == "Video" ? "video/mp4" : "audio/mpeg"
+        metadata.contentType = mimeTypeForStorage(fileURL: fileURL)
         
         do {
             // Upload main file
@@ -683,7 +682,7 @@ struct UploadView: View {
             
         } catch {
             await MainActor.run {
-                uploadStatus = "Save failed: \(error.localizedDescription)"
+                uploadStatus = firestoreErrorMessage(error)
                 isUploading = false
             }
         }

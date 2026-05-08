@@ -330,7 +330,7 @@ struct AddUpdateMessageView: View {
                     Section("Notification Preview") {
                         NotificationPreviewCard(
                             title: title.isEmpty ? "Your title here..." : title,
-                            body: message.isEmpty ? "Your message will appear here." : message,
+                            bodyt: message.isEmpty ? "Your message will appear here." : message,
                             interruptionLevel: notificationInterruption
                         )
                         .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))

@@ -105,7 +105,7 @@ struct LoginView: View {
     @State private var password = ""
     @FocusState private var isPasswordFocused: Bool
 
-    private let adminEmail = "rashon_hyslop@outlook.com"
+    private var adminEmail: String { DreamHouseAdminAuth.loginEmail }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -513,7 +513,13 @@ class AuthenticationManager: ObservableObject {
         // Listen for persisted auth state — fires immediately with current user (or nil)
         authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             DispatchQueue.main.async {
-                self?.isAuthenticated = user != nil
+                if let user, user.isAnonymous {
+                    try? Auth.auth().signOut()
+                    self?.isAuthenticated = false
+                    self?.isLoading = false
+                    return
+                }
+                self?.isAuthenticated = DreamHouseAdminAuth.isAdmin(user)
                 self?.isLoading = false
             }
         }
