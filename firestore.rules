@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.email != null
+          && (
+            request.auth.token.email == 'rashyslop@outlook.com' ||
+            request.auth.token.email == 'rashon_hyslop@outlook.com'
+          );
+    }
+
+    match /radioFlow/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    match /radioState/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    match /tickerMessages/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    match /updateMessages/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    match /profiles/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    match /content_blocks/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    match /radio_updates/{docId} {
+      allow read:  if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /scheduledContent/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    match /notifications_queue/{docId} {
+      allow read:  if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /liveStatus/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /adminUsers/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
