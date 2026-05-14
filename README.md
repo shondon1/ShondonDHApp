@@ -92,15 +92,18 @@ ShondonDHApp/
 ## 🔄 Firebase Integration
 
 The app uses Firebase for:
-- **Firestore**: Content storage and ticker message management
+- **Firestore**: Content storage, ticker messages, and `notifications_queue` for outbound pushes
 - **Storage**: File uploads for audio/video content
-- **Authentication**: Anonymous authentication for app access
+- **Authentication**: Email/password for admin access
+
+**Push notifications:** the admin app only **queues** items. You must deploy the Cloud Function in `functions/` so FCM sends and statuses update — see [docs/PUSH_NOTIFICATIONS.md](docs/PUSH_NOTIFICATIONS.md).
 
 ### **Collections**
 - `radioFlow`: Main content playlist
 - `tickerMessages`: Scrolling message management
 - `liveStatus`: Live broadcast status
 - `radioState`: Radio system state
+- `notifications_queue`: Pending/sent/failed push jobs (processed by Cloud Functions)
 
 ## 🎨 Design System
 

@@ -123,7 +123,7 @@ class PushNotificationService {
 
     private init() {}
 
-    /// Queues a notification to be sent by the Cloud Function.
+    /// Queues a notification to be sent by the Cloud Function (`functions/index.js`).
     func queue(
         title: String,
         body: String,

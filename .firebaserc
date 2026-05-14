@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "dreamhouseapp-dev",
+    "dev": "dreamhouseapp-dev",
+    "prod": "dreamhouseapp-a73ba"
+  },
+  "targets": {}
+}

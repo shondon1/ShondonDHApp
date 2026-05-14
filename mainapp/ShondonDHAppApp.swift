@@ -10,42 +10,46 @@ import Firebase
 import FirebaseAuth
 import FirebaseAppCheck
 
-// AppDelegate class
-class AppDelegate: NSObject, UIApplicationDelegate {
+#if os(iOS) || os(visionOS)
+import UIKit
+
+@objc(AppDelegate)
+final class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        return true
+        true
     }
 }
+#endif
 
 @main
 struct ShondonDHAppApp: App {
+    #if os(iOS) || os(visionOS)
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    #endif
     @StateObject private var authManager = AuthenticationManager()
-    
+
     init() {
-        // Configure App Check
-        #if targetEnvironment(simulator)
-            let providerFactory = AppCheckDebugProviderFactory()
-        #else
-            let providerFactory = DeviceCheckProviderFactory()
-        #endif
-        
-        AppCheck.setAppCheckProviderFactory(providerFactory)
-        
-        // Configure Firebase
+        AppCheck.setAppCheckProviderFactory(ShondonDHAppCheckProviderFactory())
+
         FirebaseApp.configure()
+
+        #if DEBUG
+        if let app = FirebaseApp.app() {
+            let bid = Bundle.main.bundleIdentifier ?? "(unknown bundle id)"
+            NSLog(
+                "App Check: register debug token for GOOGLE_APP_ID=%@ (%@). Scheme env: FIRAAppCheckDebugToken.",
+                app.options.googleAppID,
+                bid
+            )
+        }
+        #endif
     }
-    
+
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(authManager)
-                .onAppear {
-                    // Sign in anonymously when app launches
-                    authManager.signInAnonymously()
-                }
         }
     }
 }
-

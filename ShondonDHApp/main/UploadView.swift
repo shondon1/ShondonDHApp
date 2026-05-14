@@ -488,7 +488,7 @@ struct UploadView: View {
     
     // MARK: - Upload Logic
     func uploadMedia() async {
-        guard DreamHouseAdminAuth.isAdmin(Auth.auth().currentUser) else {
+        guard await DreamHouseAdminAuth.validateCurrentUserIsAdmin() else {
             await MainActor.run {
                 uploadStatus = "You must be signed in with the DreamHouse admin account to upload. Use Sign Out, then sign in again."
             }
